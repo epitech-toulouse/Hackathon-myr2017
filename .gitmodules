@@ -1,0 +1,3 @@
+[submodule "ApiCodec"]
+	path = ApiCodec
+	url = https://github.com/NaioTechnologies/ApiCodec
