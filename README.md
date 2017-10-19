@@ -33,5 +33,5 @@ Running
 
 At project's root, do:
 ```
-./bin/client
+./bin/EpitechClient
 ```

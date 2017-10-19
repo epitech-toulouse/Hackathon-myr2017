@@ -4,7 +4,7 @@
 
 cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
 
-project(client C CXX)
+project(EpitechClient C CXX)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -29,9 +29,9 @@ else()
 endif()
 
 # Project's sources and target binary
-file(GLOB_RECURSE SOURCE_FILES ${PROJECT_SOURCE_DIR}/src/*.cc)
+file(GLOB_RECURSE SOURCE_FILES ${PROJECT_SOURCE_DIR}/EpitechClient/*.cpp)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-add_executable(client ${SOURCE_FILES})
+add_executable(EpitechClient ${SOURCE_FILES})
 
 # Linking
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${LIBAPICODEC_HEADERS})
