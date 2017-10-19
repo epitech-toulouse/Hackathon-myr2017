@@ -35,6 +35,7 @@ add_executable(EpitechClient ${SOURCE_FILES})
 
 # Linking
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${LIBAPICODEC_HEADERS})
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/EpitechClient)
 target_link_libraries(${PROJECT_NAME} libapicodec -lpthread -lz -lsfml-system -lsfml-window -lsfml-graphics)
 
 # Re
