@@ -1,15 +1,7 @@
-#include <iostream>
-#include <Oz/Camera.hh>
-#include <Oz/CameraException.hh>
+#include "run_camera_and_display.hh"
 
 int main(int, char **)
 {
-	try {
-		Oz::ClientCamera oz_camera;
-		oz_camera.connect("127.0.0.1", 5559);
-		oz_camera.run();
-	} catch (const Oz::ClientCameraException & error) {
-		std::cerr << "Oz::Camera: " << error.what() << std::endl;
-	}
+	just_run_camera_and_display();
 	return 0;
 }
