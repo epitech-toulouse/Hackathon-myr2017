@@ -1,3 +1,5 @@
+#include <iostream>
+#include <memory>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -7,12 +9,16 @@
 #include <ApiCodec/ApiWatchdogPacket.hpp>
 #include "Oz/Camera.hh"
 #include "Oz/CameraException.hh"
+#include "utilities.hh"
 
 using std::dynamic_pointer_cast;
 using std::chrono::duration_cast;
 
 namespace Oz {
 
+static const size_t CAMERA_RESOLUTION_X = 752;
+static const size_t CAMERA_RESOLUTION_Y = 480;
+static const size_t CAMERA_RESOLUTION = CAMERA_RESOLUTION_X * CAMERA_RESOLUTION_Y;
 static const size_t BUFFER_SIZE = 0x400000;
 static const std::chrono::milliseconds WAIT_TIME_MS (100);
 
@@ -20,6 +26,8 @@ ClientCamera::ClientCamera(void) :
 	_host { "" },
 	_port { 0 },
 	_packets { },
+	_left_buffer { new uint8_t[CAMERA_RESOLUTION*4] },
+	_right_buffer { new uint8_t[CAMERA_RESOLUTION*4] },
 	_socket { -1 },
 	_connected { false },
 	_running { false }
@@ -30,6 +38,14 @@ ClientCamera::~ClientCamera()
 {
 	if (_connected) {
 		this->disconnect();
+	}
+	if (_left_buffer != nullptr) {
+		delete[] _left_buffer;
+		_left_buffer = nullptr;
+	}
+	if (_right_buffer != nullptr) {
+		delete[] _right_buffer;
+		_right_buffer = nullptr;
 	}
 }
 
@@ -74,7 +90,24 @@ void ClientCamera::run()
 	_thread_read = std::thread(&ClientCamera::_read, this);
 	_thread_write = std::thread(&ClientCamera::_write, this);
 	while (_running) {
-		// do stuff
+		if (_packets.empty()) {
+			std::this_thread::sleep_for(WAIT_TIME_MS);
+			continue;
+		}
+		std::shared_ptr<ApiStereoCameraPacket> packet (_packets.back());
+		_packets.clear();
+		/* packet->dataBuffer->release_ownership(); */
+		/* std::unique_ptr<uint8_t[]> capture_data (packet->dataBuffer->data()); */
+		if (is_image_packet_zlib(packet)) {
+			std::unique_ptr<uint8_t[]> data_buffer (new uint8_t[BUFFER_SIZE]);
+			size_t data_size = zlib_uncompress(
+				data_buffer.get(), packet->dataBuffer->data(),
+				BUFFER_SIZE, packet->dataBuffer->size()
+			);
+			this->_update_buffers(packet, data_buffer.get(), data_size);
+		} else {
+			this->_update_buffers(packet, packet->dataBuffer->data(), packet->dataBuffer->size());
+		}
 		std::this_thread::sleep_for(WAIT_TIME_MS);
 	}
 }
@@ -96,13 +129,14 @@ bool ClientCamera::is_connected() const noexcept
 void ClientCamera::_read() noexcept
 {
 	Naio01Codec codec;
-	uint8_t rx_buffer[BUFFER_SIZE];
+	std::unique_ptr<uint8_t[]> rx_buffer(new uint8_t[BUFFER_SIZE]);
 	while (_running) {
-		ssize_t rx_bytes = read(_socket, rx_buffer, BUFFER_SIZE);
+		ssize_t rx_bytes = read(_socket, rx_buffer.get(), BUFFER_SIZE);
 		bool has_header_packet = false;
-		if (rx_bytes > 0 && codec.decode(rx_buffer, static_cast<uint>(rx_bytes), has_header_packet)) {
+		if (rx_bytes > 0 && codec.decode(rx_buffer.get(), static_cast<uint>(rx_bytes), has_header_packet)) {
 			if (has_header_packet) {
-				// TODO: Unexpected, do something, log.
+				std::cerr << "Header packet ?" << std::endl;
+				continue;
 			}
 			for (auto && base_packet : codec.currentBasePacketList) {
 				ApiStereoCameraPacketPtr packet = dynamic_pointer_cast<ApiStereoCameraPacket>(base_packet);
@@ -110,7 +144,9 @@ void ClientCamera::_read() noexcept
 					_latest_read = this->_now();
 					_packets.push_back(packet);
 				} else {
-					// TODO: Received a non-expected packet, log.
+					std::cerr << "Not a <ApiStereoCamera> packet ?! Type=0x"
+						<< std::hex << unsigned(base_packet->getPacketId()) << std::dec
+						<< " ?\?!" << std::endl;
 				}
 			}
 			codec.currentBasePacketList.clear();
@@ -132,6 +168,48 @@ void ClientCamera::_write() noexcept
 std::chrono::milliseconds ClientCamera::_now() const noexcept
 {
 	return duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+}
+
+void ClientCamera::_update_buffers(
+	const std::shared_ptr<ApiStereoCameraPacket> & packet,
+	const uint8_t * data_buffer,
+	size_t data_size)
+{
+	if (is_image_packet_bayer(packet)) {
+		if (data_size < CAMERA_RESOLUTION * 2) {
+			std::cerr << "Bad bayer stereo image size!" << std::endl;
+			return;
+		}
+		for (size_t x = 0 ; x < CAMERA_RESOLUTION ; ++x) {
+			_left_buffer[(x*4) + 0] = data_buffer[x];
+			_left_buffer[(x*4) + 1] = data_buffer[x];
+			_left_buffer[(x*4) + 2] = data_buffer[x];
+			_left_buffer[(x*4) + 3] = 255;
+		}
+		for (size_t x = 0 ; x < CAMERA_RESOLUTION ; ++x) {
+			_right_buffer[(x*4) + 0] = data_buffer[x + CAMERA_RESOLUTION];
+			_right_buffer[(x*4) + 1] = data_buffer[x + CAMERA_RESOLUTION];
+			_right_buffer[(x*4) + 2] = data_buffer[x + CAMERA_RESOLUTION];
+			_right_buffer[(x*4) + 3] = 255;
+		}
+	} else {
+		if (data_size < CAMERA_RESOLUTION * 3 * 2) {
+			std::cerr << "Bad colorized image size!" << std::endl;
+			return;
+		}
+		for (size_t x = 0 ; x < CAMERA_RESOLUTION ; ++x) {
+			_left_buffer[(x*4) + 0] = data_buffer[(x*3) + 0];
+			_left_buffer[(x*4) + 1] = data_buffer[(x*3) + 1];
+			_left_buffer[(x*4) + 2] = data_buffer[(x*3) + 2];
+			_left_buffer[(x*4) + 3] = 255;
+		}
+		for (size_t x = 0 ; x < CAMERA_RESOLUTION ; ++x) {
+			_right_buffer[(x*4) + 0] = data_buffer[(x*3) + 0 + CAMERA_RESOLUTION];
+			_right_buffer[(x*4) + 1] = data_buffer[(x*3) + 1 + CAMERA_RESOLUTION];
+			_right_buffer[(x*4) + 2] = data_buffer[(x*3) + 2 + CAMERA_RESOLUTION];
+			_right_buffer[(x*4) + 3] = 255;
+		}
+	}
 }
 
 }

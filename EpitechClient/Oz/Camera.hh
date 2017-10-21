@@ -30,11 +30,14 @@ private:
 	void _read() noexcept;
 	void _write() noexcept;
 	std::chrono::milliseconds _now() const noexcept;
+	void _update_buffers(const std::shared_ptr<ApiStereoCameraPacket> &, const uint8_t *, size_t);
 
 private:
 	std::string _host;
 	uint16_t _port;
 	std::vector<ApiStereoCameraPacketPtr> _packets;
+	uint8_t * _left_buffer;
+	uint8_t * _right_buffer;
 	int _socket;
 	bool _connected;
 	bool _running;
