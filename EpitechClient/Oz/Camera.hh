@@ -24,6 +24,7 @@ public:
 	void disconnect();
 	void run();
 	void stop() noexcept;
+	void share_screen_buffers(const uint8_t **, const uint8_t **) const noexcept;
 	bool is_connected() const noexcept;
 
 private:

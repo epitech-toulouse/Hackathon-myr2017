@@ -121,6 +121,12 @@ void ClientCamera::stop() noexcept
 	}
 }
 
+void ClientCamera::share_screen_buffers(const uint8_t ** left, const uint8_t ** right) const noexcept
+{
+	*left = _left_buffer;
+	*right = _right_buffer;
+}
+
 bool ClientCamera::is_connected() const noexcept
 {
 	return _connected;
