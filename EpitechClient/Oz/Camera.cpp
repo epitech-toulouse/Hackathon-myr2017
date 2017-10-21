@@ -36,7 +36,7 @@ ClientCamera::ClientCamera(void) :
 
 ClientCamera::~ClientCamera()
 {
-	if (_connected) {
+	if (_connected.load()) {
 		this->disconnect();
 	}
 	if (_left_buffer != nullptr) {
@@ -51,7 +51,7 @@ ClientCamera::~ClientCamera()
 
 void ClientCamera::connect(std::string host, uint16_t port)
 {
-	if (_connected) {
+	if (_connected.load()) {
 		this->disconnect();
 	}
 	struct sockaddr_in target;
@@ -67,7 +67,7 @@ void ClientCamera::connect(std::string host, uint16_t port)
 	if (0 > ::connect(_socket, (struct sockaddr *) &target, sizeof(target))) {
 		throw ClientCameraConnectError(this, strerror(errno));
 	}
-	_connected = true;
+	_connected.store(true);
 }
 
 void ClientCamera::disconnect()
@@ -78,18 +78,18 @@ void ClientCamera::disconnect()
 	_host = "";
 	_port = 0;
 	_socket = -1;
-	_connected = false;
+	_connected.store(false);
 }
 
 void ClientCamera::run()
 {
-	if (!_connected) {
+	if (!_connected.load()) {
 		throw ClientCameraStateError(this, "Camera socket is not connected; cannot run.");
 	}
-	_running = true;
 	_thread_read = std::thread(&ClientCamera::_read, this);
 	_thread_write = std::thread(&ClientCamera::_write, this);
-	while (_running) {
+	_running.store(true);
+	while (_running.load()) {
 		if (_packets.empty()) {
 			std::this_thread::sleep_for(WAIT_TIME_MS);
 			continue;
@@ -114,8 +114,8 @@ void ClientCamera::run()
 
 void ClientCamera::stop() noexcept
 {
-	if (_running) {
-		_running = false;
+	if (_running.load()) {
+		_running.store(false);
 		_thread_read.join();
 		_thread_write.join();
 	}
@@ -129,14 +129,19 @@ void ClientCamera::share_screen_buffers(const uint8_t ** left, const uint8_t ** 
 
 bool ClientCamera::is_connected() const noexcept
 {
-	return _connected;
+	return _connected.load();
+}
+
+bool ClientCamera::is_running() const noexcept
+{
+	return _running.load();
 }
 
 void ClientCamera::_read() noexcept
 {
 	Naio01Codec codec;
 	std::unique_ptr<uint8_t[]> rx_buffer(new uint8_t[BUFFER_SIZE]);
-	while (_running) {
+	while (_running.load()) {
 		ssize_t rx_bytes = read(_socket, rx_buffer.get(), BUFFER_SIZE);
 		bool has_header_packet = false;
 		if (rx_bytes > 0 && codec.decode(rx_buffer.get(), static_cast<uint>(rx_bytes), has_header_packet)) {
@@ -163,7 +168,7 @@ void ClientCamera::_read() noexcept
 
 void ClientCamera::_write() noexcept
 {
-	while (_running) {
+	while (_running.load()) {
 		ApiWatchdogPacketPtr packet = std::make_shared<ApiWatchdogPacket>(0xAC1D);
 		cl_copy::BufferUPtr buffer = packet->encode();
 		write(_socket, buffer->data(), buffer->size());

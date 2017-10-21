@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <chrono>
 #include <string>
 #include <thread>
@@ -26,6 +27,7 @@ public:
 	void stop() noexcept;
 	void share_screen_buffers(const uint8_t **, const uint8_t **) const noexcept;
 	bool is_connected() const noexcept;
+	bool is_running() const noexcept;
 
 private:
 	void _read() noexcept;
@@ -40,8 +42,8 @@ private:
 	uint8_t * _left_buffer;
 	uint8_t * _right_buffer;
 	int _socket;
-	bool _connected;
-	bool _running;
+	std::atomic<bool> _connected;
+	std::atomic<bool> _running;
 	std::thread _thread_read;
 	std::thread _thread_write;
 	std::chrono::milliseconds _latest_read;
