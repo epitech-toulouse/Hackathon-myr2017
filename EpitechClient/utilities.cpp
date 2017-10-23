@@ -7,9 +7,9 @@
  * More C++ friendly zlib's uncompress() function.
  * Errors descriptions are from zlib man page for uncompress.
  */
-size_t zlib_uncompress(uint8_t * dest, const uint8_t * src, size_t dest_max_size, size_t src_size)
+size_t zlib_uncompress(uint8_t * dest, const uint8_t * src, long unsigned int dest_max_size, long unsigned int src_size)
 {
-	size_t dest_size = dest_max_size;
+	long unsigned int dest_size = dest_max_size;
 	int status = uncompress(dest, &dest_size, src, src_size);
 	switch (status) {
 	case Z_OK:

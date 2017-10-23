@@ -25,4 +25,4 @@ inline bool is_image_packet_bayer(const std::shared_ptr<ApiStereoCameraPacket> &
 	);
 }
 
-size_t zlib_uncompress(uint8_t * dest, const uint8_t * src, size_t dest_max_size, size_t src_size);
+size_t zlib_uncompress(uint8_t * dest, const uint8_t * src, long unsigned int dest_max_size, long unsigned int src_size);
