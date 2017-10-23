@@ -1,4 +1,4 @@
-Implementation for the hackaton Mouve Your Robot '17
+Implementation for the hackaton Move Your Robot '17
 ====================================================
 
 
