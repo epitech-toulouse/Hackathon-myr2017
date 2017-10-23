@@ -1,0 +1,7 @@
+/bin
+/build
+*.sw[a-z]
+*.tmp
+*.log
+*~
+*.[ao]
