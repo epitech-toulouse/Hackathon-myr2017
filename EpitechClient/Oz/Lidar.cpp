@@ -2,17 +2,19 @@
 
 using namespace std;
 
-Lidar::Lidar(){
-    cout << "Starting LIDAR" << endl;
-}
+class Lidar {
 
-Lidar::~Lidar(){
-    cout << "Ending LIDAR" << endl;
-}
+    Lidar::Lidar(){
+        cout << "Starting LIDAR" << endl;
+    }
 
-int startLidar() {
-    Lidar = new Lidar();
-    // do stuff
+    Lidar::~Lidar(){
+        cout << "Ending LIDAR" << endl;
+    }
 
-    Lidar.~Lidar()
+    int startLidar() {
+        Lidar lidar = new Lidar();
+
+        delete lidar;
+    }
 }

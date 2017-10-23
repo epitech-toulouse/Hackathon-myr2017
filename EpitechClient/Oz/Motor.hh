@@ -6,5 +6,6 @@
     public:
         Lidar();
         ~Lidar();
+        int startLidar();
     };
 #endif
