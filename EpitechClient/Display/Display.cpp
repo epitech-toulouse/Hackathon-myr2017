@@ -3,8 +3,8 @@
 #include <SFML/Graphics.hpp>
 #include "Display/Display.hh"
 
-static const size_t CAMERA_CAPTURE_WIDTH = 752;
-static const size_t CAMERA_CAPTURE_HEIGHT = 480;
+static const size_t CAMERA_CAPTURE_WIDTH = 752 / 2;
+static const size_t CAMERA_CAPTURE_HEIGHT = 480 / 2;
 
 ClientDisplay::ClientDisplay(void) :
 	_window_title { "Naio Move your Robot 2017 :: Epitech's API Client" },

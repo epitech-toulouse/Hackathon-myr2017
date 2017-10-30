@@ -16,8 +16,8 @@ using std::chrono::duration_cast;
 
 namespace Oz {
 
-static const size_t CAMERA_RESOLUTION_X = 752;
-static const size_t CAMERA_RESOLUTION_Y = 480;
+static const size_t CAMERA_RESOLUTION_X = 752 / 2;
+static const size_t CAMERA_RESOLUTION_Y = 480 / 2;
 static const size_t CAMERA_RESOLUTION = CAMERA_RESOLUTION_X * CAMERA_RESOLUTION_Y;
 static const size_t BUFFER_SIZE = 0x400000;
 static const std::chrono::milliseconds WAIT_TIME_MS (100);
@@ -181,43 +181,39 @@ std::chrono::milliseconds ClientCamera::_now() const noexcept
 	return duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 }
 
+/**
+ * Color disposition look likes this:
+ * Row 0: {G,R,G,R,repeating ...} [for all EVEN rows]
+ * Row 1: {B,G,B,G,repeating ...} [for all ODD rows]
+ * Row ...: {repeating ...}
+ */
 void ClientCamera::_update_buffers(
 	const std::shared_ptr<ApiStereoCameraPacket> & packet,
 	const uint8_t * data_buffer,
 	size_t data_size)
 {
 	if (is_image_packet_bayer(packet)) {
-		if (data_size < CAMERA_RESOLUTION * 2) {
+		if (data_size < CAMERA_RESOLUTION * 8) {
 			std::cerr << "Bad bayer stereo image size!" << std::endl;
 			return;
 		}
-		for (size_t x = 0 ; x < CAMERA_RESOLUTION ; ++x) {
-			_left_buffer[(x*4) + 0] = data_buffer[x];
-			_left_buffer[(x*4) + 1] = data_buffer[x];
-			_left_buffer[(x*4) + 2] = data_buffer[x];
-			_left_buffer[(x*4) + 3] = 255;
-		}
-		for (size_t x = 0 ; x < CAMERA_RESOLUTION ; ++x) {
-			_right_buffer[(x*4) + 0] = data_buffer[x + CAMERA_RESOLUTION];
-			_right_buffer[(x*4) + 1] = data_buffer[x + CAMERA_RESOLUTION];
-			_right_buffer[(x*4) + 2] = data_buffer[x + CAMERA_RESOLUTION];
-			_right_buffer[(x*4) + 3] = 255;
-		}
+		bayer_grbg32_to_rgba24(_left_buffer, data_buffer, CAMERA_RESOLUTION_X, CAMERA_RESOLUTION_Y);
+		bayer_grbg32_to_rgba24(_right_buffer, data_buffer + CAMERA_RESOLUTION * 4, CAMERA_RESOLUTION_X, CAMERA_RESOLUTION_Y);
 	} else {
 		if (data_size < CAMERA_RESOLUTION * 3 * 2) {
 			std::cerr << "Bad colorized image size!" << std::endl;
 			return;
 		}
-		for (size_t x = 0 ; x < CAMERA_RESOLUTION ; ++x) {
+		for (size_t x = 0 ; x < CAMERA_RESOLUTION * 4 ; ++x) {
 			_left_buffer[(x*4) + 0] = data_buffer[(x*3) + 0];
 			_left_buffer[(x*4) + 1] = data_buffer[(x*3) + 1];
 			_left_buffer[(x*4) + 2] = data_buffer[(x*3) + 2];
 			_left_buffer[(x*4) + 3] = 255;
 		}
-		for (size_t x = 0 ; x < CAMERA_RESOLUTION ; ++x) {
-			_right_buffer[(x*4) + 0] = data_buffer[(x*3) + 0 + CAMERA_RESOLUTION];
-			_right_buffer[(x*4) + 1] = data_buffer[(x*3) + 1 + CAMERA_RESOLUTION];
-			_right_buffer[(x*4) + 2] = data_buffer[(x*3) + 2 + CAMERA_RESOLUTION];
+		for (size_t x = 0 ; x < CAMERA_RESOLUTION * 4 ; ++x) {
+			_right_buffer[(x*4) + 0] = data_buffer[(x*3) + 0 + CAMERA_RESOLUTION * 4];
+			_right_buffer[(x*4) + 1] = data_buffer[(x*3) + 1 + CAMERA_RESOLUTION * 4];
+			_right_buffer[(x*4) + 2] = data_buffer[(x*3) + 2 + CAMERA_RESOLUTION * 4];
 			_right_buffer[(x*4) + 3] = 255;
 		}
 	}
