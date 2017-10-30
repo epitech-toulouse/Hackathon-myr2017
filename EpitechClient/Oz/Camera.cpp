@@ -26,8 +26,8 @@ ClientCamera::ClientCamera(void) :
 	_host { "" },
 	_port { 0 },
 	_packets { },
-	_left_buffer { new uint8_t[CAMERA_RESOLUTION*4] },
-	_right_buffer { new uint8_t[CAMERA_RESOLUTION*4] },
+	_left_buffer { new uint8_t[CAMERA_RESOLUTION * 4] },
+	_right_buffer { new uint8_t[CAMERA_RESOLUTION * 4] },
 	_socket { -1 },
 	_connected { false },
 	_running { false }
