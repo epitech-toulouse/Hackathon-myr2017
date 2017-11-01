@@ -22,23 +22,17 @@ static const size_t CAMERA_RESOLUTION = CAMERA_RESOLUTION_X * CAMERA_RESOLUTION_
 static const size_t BUFFER_SIZE = 0x400000;
 static const std::chrono::milliseconds WAIT_TIME_MS (100);
 
-ClientCamera::ClientCamera(void) :
-	_host { "" },
-	_port { 0 },
+ClientCamera::ClientCamera(Gateway &gateway) :
+	_gateway { gateway },
 	_packets { },
 	_left_buffer { new uint8_t[CAMERA_RESOLUTION*4] },
 	_right_buffer { new uint8_t[CAMERA_RESOLUTION*4] },
-	_socket { -1 },
-	_connected { false },
 	_running { false }
 {
 }
 
 ClientCamera::~ClientCamera()
 {
-	if (_connected.load()) {
-		this->disconnect();
-	}
 	if (_left_buffer != nullptr) {
 		delete[] _left_buffer;
 		_left_buffer = nullptr;
@@ -49,41 +43,9 @@ ClientCamera::~ClientCamera()
 	}
 }
 
-void ClientCamera::connect(std::string host, uint16_t port)
-{
-	if (_connected.load()) {
-		this->disconnect();
-	}
-	struct sockaddr_in target;
-	_host = host;
-	_port = port;
-	target.sin_addr.s_addr = inet_addr(_host.c_str());
-	target.sin_family = AF_INET;
-	target.sin_port = htons(_port);
-	_socket = socket(AF_INET, SOCK_STREAM, 0);
-	if (0 > _socket) {
-		throw ClientCameraConnectError(this, strerror(errno));
-	}
-	if (0 > ::connect(_socket, (struct sockaddr *) &target, sizeof(target))) {
-		throw ClientCameraConnectError(this, strerror(errno));
-	}
-	_connected.store(true);
-}
-
-void ClientCamera::disconnect()
-{
-	if (0 > shutdown(_socket, SHUT_RDWR)) {
-		throw ClientCameraDisconnectError(this, strerror(errno));
-	}
-	_host = "";
-	_port = 0;
-	_socket = -1;
-	_connected.store(false);
-}
-
 void ClientCamera::run()
 {
-	if (!_connected.load()) {
+	if (!_gateway.getCameraSocket().isConnected()) {
 		throw ClientCameraStateError(this, "Camera socket is not connected; cannot run.");
 	}
 	_thread_read = std::thread(&ClientCamera::_read, this);
@@ -125,11 +87,6 @@ void ClientCamera::share_screen_buffers(const uint8_t ** left, const uint8_t ** 
 {
 	*left = _left_buffer;
 	*right = _right_buffer;
-}
-
-bool ClientCamera::is_connected() const noexcept
-{
-	return _connected.load();
 }
 
 bool ClientCamera::is_running() const noexcept
