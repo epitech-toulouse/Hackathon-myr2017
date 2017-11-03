@@ -8,7 +8,7 @@
 #include <ApiCodec/ApiStereoCameraPacket.hpp>
 #include <ApiCodec/ApiWatchdogPacket.hpp>
 #include "Oz/Camera.hh"
-#include "Oz/CameraException.hh"
+#include "exceptions.hh"
 #include "utilities.hh"
 
 using std::dynamic_pointer_cast;
