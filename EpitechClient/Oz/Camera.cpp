@@ -1,17 +1,10 @@
 #include <iostream>
 #include <memory>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <ApiCodec/Naio01Codec.hpp>
 #include <ApiCodec/ApiStereoCameraPacket.hpp>
-#include <ApiCodec/ApiWatchdogPacket.hpp>
 #include "Oz/Camera.hh"
-#include "Oz/CameraException.hh"
+#include "exceptions.hh"
 #include "utilities.hh"
 
-using std::dynamic_pointer_cast;
 using std::chrono::duration_cast;
 
 namespace Oz {
@@ -22,23 +15,16 @@ static const size_t CAMERA_RESOLUTION = CAMERA_RESOLUTION_X * CAMERA_RESOLUTION_
 static const size_t BUFFER_SIZE = 0x400000;
 static const std::chrono::milliseconds WAIT_TIME_MS (100);
 
-ClientCamera::ClientCamera(void) :
-	_host { "" },
-	_port { 0 },
-	_packets { },
+ClientCamera::ClientCamera(Gateway::Gateway & gateway) :
+	_gateway { gateway },
 	_left_buffer { new uint8_t[CAMERA_RESOLUTION * 4] },
 	_right_buffer { new uint8_t[CAMERA_RESOLUTION * 4] },
-	_socket { -1 },
-	_connected { false },
 	_running { false }
 {
 }
 
 ClientCamera::~ClientCamera()
 {
-	if (_connected.load()) {
-		this->disconnect();
-	}
 	if (_left_buffer != nullptr) {
 		delete[] _left_buffer;
 		_left_buffer = nullptr;
@@ -49,55 +35,41 @@ ClientCamera::~ClientCamera()
 	}
 }
 
-void ClientCamera::connect(std::string host, uint16_t port)
+void ClientCamera::start()
 {
-	if (_connected.load()) {
-		this->disconnect();
+	if (!_running) {
+		_thread = std::thread(&ClientCamera::_read, this);
 	}
-	struct sockaddr_in target;
-	_host = host;
-	_port = port;
-	target.sin_addr.s_addr = inet_addr(_host.c_str());
-	target.sin_family = AF_INET;
-	target.sin_port = htons(_port);
-	_socket = socket(AF_INET, SOCK_STREAM, 0);
-	if (0 > _socket) {
-		throw ClientCameraConnectError(this, strerror(errno));
-	}
-	if (0 > ::connect(_socket, (struct sockaddr *) &target, sizeof(target))) {
-		throw ClientCameraConnectError(this, strerror(errno));
-	}
-	_connected.store(true);
 }
 
-void ClientCamera::disconnect()
+void ClientCamera::stop() noexcept
 {
-	if (0 > shutdown(_socket, SHUT_RDWR)) {
-		throw ClientCameraDisconnectError(this, strerror(errno));
+	if (_running.load()) {
+		_running.store(false);
+		_thread.join();
 	}
-	_host = "";
-	_port = 0;
-	_socket = -1;
-	_connected.store(false);
 }
 
-void ClientCamera::run()
+void ClientCamera::share_screen_buffers(const uint8_t ** left, const uint8_t ** right) const noexcept
 {
-	if (!_connected.load()) {
-		throw ClientCameraStateError(this, "Camera socket is not connected; cannot run.");
-	}
-	_thread_read = std::thread(&ClientCamera::_read, this);
-	_thread_write = std::thread(&ClientCamera::_write, this);
+	*left = _left_buffer;
+	*right = _right_buffer;
+}
+
+bool ClientCamera::is_running() const noexcept
+{
+	return _running.load();
+}
+
+void ClientCamera::_read() noexcept
+{
 	_running.store(true);
 	while (_running.load()) {
-		if (_packets.empty()) {
+		std::shared_ptr<ApiStereoCameraPacket> packet = _gateway.get<ApiStereoCameraPacket>();
+		if (packet == nullptr) {
 			std::this_thread::sleep_for(WAIT_TIME_MS);
 			continue;
 		}
-		std::shared_ptr<ApiStereoCameraPacket> packet (_packets.back());
-		_packets.clear();
-		/* packet->dataBuffer->release_ownership(); */
-		/* std::unique_ptr<uint8_t[]> capture_data (packet->dataBuffer->data()); */
 		if (is_image_packet_zlib(packet)) {
 			std::unique_ptr<uint8_t[]> data_buffer (new uint8_t[BUFFER_SIZE]);
 			size_t data_size = zlib_uncompress(
@@ -110,75 +82,6 @@ void ClientCamera::run()
 		}
 		std::this_thread::sleep_for(WAIT_TIME_MS);
 	}
-}
-
-void ClientCamera::stop() noexcept
-{
-	if (_running.load()) {
-		_running.store(false);
-		_thread_read.join();
-		_thread_write.join();
-	}
-}
-
-void ClientCamera::share_screen_buffers(const uint8_t ** left, const uint8_t ** right) const noexcept
-{
-	*left = _left_buffer;
-	*right = _right_buffer;
-}
-
-bool ClientCamera::is_connected() const noexcept
-{
-	return _connected.load();
-}
-
-bool ClientCamera::is_running() const noexcept
-{
-	return _running.load();
-}
-
-void ClientCamera::_read() noexcept
-{
-	Naio01Codec codec;
-	std::unique_ptr<uint8_t[]> rx_buffer(new uint8_t[BUFFER_SIZE]);
-	while (_running.load()) {
-		ssize_t rx_bytes = read(_socket, rx_buffer.get(), BUFFER_SIZE);
-		bool has_header_packet = false;
-		if (rx_bytes > 0 && codec.decode(rx_buffer.get(), static_cast<uint>(rx_bytes), has_header_packet)) {
-			if (has_header_packet) {
-				std::cerr << "Header packet ?" << std::endl;
-				continue;
-			}
-			for (auto && base_packet : codec.currentBasePacketList) {
-				ApiStereoCameraPacketPtr packet = dynamic_pointer_cast<ApiStereoCameraPacket>(base_packet);
-				if (packet.get() != nullptr) {
-					_latest_read = this->_now();
-					_packets.push_back(packet);
-				} else {
-					std::cerr << "Not a <ApiStereoCamera> packet ?! Type=0x"
-						<< std::hex << unsigned(base_packet->getPacketId()) << std::dec
-						<< " ?\?!" << std::endl;
-				}
-			}
-			codec.currentBasePacketList.clear();
-		}
-		std::this_thread::sleep_for(WAIT_TIME_MS);
-	}
-}
-
-void ClientCamera::_write() noexcept
-{
-	while (_running.load()) {
-		ApiWatchdogPacketPtr packet = std::make_shared<ApiWatchdogPacket>(0xAC1D);
-		cl_copy::BufferUPtr buffer = packet->encode();
-		write(_socket, buffer->data(), buffer->size());
-		std::this_thread::sleep_for(WAIT_TIME_MS);
-	}
-}
-
-std::chrono::milliseconds ClientCamera::_now() const noexcept
-{
-	return duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 }
 
 /**
