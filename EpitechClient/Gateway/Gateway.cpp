@@ -1,105 +1,119 @@
+#include <ApiCodec/Naio01Codec.hpp>
+#include <ApiCodec/ApiWatchdogPacket.hpp>
 #include "Gateway.hh"
+#include "exceptions.hh"
 
-Gateway::Gateway(std::string hostAddress, uint16_t hostMainPort, uint16_t hostCameraPort):
-_mainSocket { hostAddress, hostMainPort },
-_cameraSocket { hostAddress, hostCameraPort } {
-	std::cout << "I'm a gateway" << std::endl;
+namespace Gateway
+{
+
+static const size_t BUFFER_SIZE = 0x400000;
+static const std::chrono::milliseconds WAIT_TIME_MS (100);
+
+Gateway::Gateway(const std::string & hostAddress, uint16_t hostMainPort, uint16_t hostCameraPort) :
+	_running { false },
+	_main_socket { hostAddress, hostMainPort },
+	_camera_socket { hostAddress, hostCameraPort }
+{
 }
 
-Gateway::~Gateway() {
-	std::cout << "Gateway died" << std::endl;
+Gateway::~Gateway()
+{
+	this->stop();
+}
+
+bool Gateway::is_running() const noexcept
+{
+	return _running.load();
+}
+
+void Gateway::start()
+{
+	if (!_running.load()) {
+		try {
+			_running.store(true);
+			_main_socket.connect();
+			_camera_socket.connect();
+			_read_thr = std::thread(&Gateway::_read, this);
+			_write_thr = std::thread(&Gateway::_write, this);
+		} catch (...) {
+			_running.store(false);
+			throw;
+		}
+	}
+}
+
+void Gateway::stop()
+{
+	if (_running.load()) {
+		_running.store(false);
+		_read_thr.join();
+		_write_thr.join();
+		_main_socket.disconnect();
+		_camera_socket.disconnect();
+	}
+}
+
+void Gateway::enqueue(std::unique_ptr<BaseNaio01Packet> && packet)
+{
+	_packet_queue.push(std::move(packet));
 }
 
 void Gateway::_read() noexcept
 {
-	std::unique_ptr<uint8_t[]> rx_buffer(new uint8_t[BUFFER_SIZE]);
-	while (_running.load()) {
-		this->_decodePackets(rx_buffer, _mainSocket);
-		this->_decodePackets(rx_buffer, _cameraSocket);
-		std::this_thread::sleep_for(WAIT_TIME_MS);
-	}
-}
-
-void Gateway::_decodePackets(std::unique_ptr<uint8_t> const & rx_buffer, Socket const & sock)
-{
-	Naio01Codec codec;
-	ssize_t rx_bytes = read(sock.getSocket(), rx_buffer.get(), BUFFER_SIZE);
-	bool has_header_packet = false;
-	if (rx_bytes > 0 && codec.decode(rx_buffer.get(), static_cast<uint>(rx_bytes), has_header_packet)) {
-		if (has_header_packet) {
-			std::cerr << "Header packet ?" << std::endl;
-			continue;
+	try {
+		std::unique_ptr<uint8_t[]> rx_buffer(new uint8_t[BUFFER_SIZE]);
+		while (_running.load()) {
+			this->_decodePackets(rx_buffer.get(), _main_socket);
+			this->_decodePackets(rx_buffer.get(), _camera_socket);
+			std::this_thread::sleep_for(WAIT_TIME_MS);
 		}
-		for (auto && base_packet : codec.currentBasePacketList) {
-			this->_setPacket(base_packet);
-		}
-		codec.currentBasePacketList.clear();
+	} catch (const ClientException & error) {
+		std::cerr << error.what() << std::endl;
+		_running.store(false);
 	}
 }
 
 void Gateway::_write() noexcept
 {
-	while (_running.load()) {
-		ApiWatchdogPacketPtr packet = std::make_shared<ApiWatchdogPacket>(0xAC1D);
-		cl_copy::BufferUPtr buffer = packet->encode();
-		write(_socket, buffer->data(), buffer->size());
-		std::this_thread::sleep_for(WAIT_TIME_MS);
+	try {
+		while (_running.load()) {
+			while (!_packet_queue.empty()) {
+				std::unique_ptr<BaseNaio01Packet> packet = std::move(_packet_queue.front());
+				_packet_queue.pop();
+				std::unique_ptr<cl_copy::Buffer> buffer (packet->encode());
+				_main_socket.write(buffer->data(), buffer->size());
+			}
+			ApiWatchdogPacket packet(0xFEU);
+			std::unique_ptr<cl_copy::Buffer> buffer (packet.encode());
+			_camera_socket.write(buffer->data(), buffer->size());
+			std::this_thread::sleep_for(WAIT_TIME_MS);
+		}
+	} catch (const ClientException & error) {
+		std::cerr << error.what() << std::endl;
+		_running.store(false);
 	}
 }
 
-void Gateway::_setPacket(std::shared_ptr<BaseNaio01Packet> packet)
+void Gateway::_decodePackets(uint8_t * rx_buffer, const Socket & sock)
 {
-	_packets[packet->getPacketId()] = packet;
+	Naio01Codec codec;
+	size_t rx_bytes = sock.read(rx_buffer, BUFFER_SIZE);
+	bool has_header_packet = false;
+	if (rx_bytes > 0 && codec.decode(rx_buffer, static_cast<uint>(rx_bytes), has_header_packet)) {
+		if (has_header_packet) {
+			std::cerr << "Header packet ?" << std::endl;
+		}
+		for (auto && base_packet : codec.currentBasePacketList) {
+			this->_set(std::move(base_packet));
+		}
+		codec.currentBasePacketList.clear();
+	}
 }
 
 
-Socket::Socket(std::string address, uint16_t port):
-_socket { -1 },
-_connected { false },
-_address { address },
-_port { port },
+void Gateway::_set(std::shared_ptr<BaseNaio01Packet> && packet) noexcept
 {
-
+	_last_packets.emplace(std::type_index(typeid(*packet)), packet);
 }
 
-Socket::~Socket(){
-
-}
-
-int Socket::getSocket(){
-	return _socket;
-}
-
-bool Socket::isConnected() const noexcept {
-	return _connected;
-}
-
-void Socket::connect(){
-	if (_connected.load()) {
-		this->disconnect();
-	}
-	struct sockaddr_in target;
-	_address = host;
-	_port = port;
-	target.sin_addr.s_addr = inet_addr(_address.c_str());
-	target.sin_family = AF_INET;
-	target.sin_port = htons(_port);
-	_socket = socket(AF_INET, SOCK_STREAM, 0);
-	if (0 > _socket) {
-		throw SocketConnectError(this, strerror(errno));
-	}
-	if (0 > ::connect(_socket, (struct sockaddr *) &target, sizeof(target))) {
-		throw SocketConnectError(this, strerror(errno));
-	}
-	_connected.store(true);
-}
-
-void Socket::disconnect(){
-	if (0 > shutdown(_socket, SHUT_RDWR)) {
-		throw SocketDisconnectError(this, strerror(errno));
-	}
-	_address = "";
-	_port = 0;
-	_socket = -1;
-	_connected.store(false);
 }
