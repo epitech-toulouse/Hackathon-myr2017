@@ -15,7 +15,7 @@ static const size_t CAMERA_RESOLUTION = CAMERA_RESOLUTION_X * CAMERA_RESOLUTION_
 static const size_t BUFFER_SIZE = 0x400000;
 static const std::chrono::milliseconds WAIT_TIME_MS (100);
 
-ClientCamera::ClientCamera(Gateway::Gateway & gateway) :
+Camera::Camera(Gateway::Gateway & gateway) :
 	_gateway { gateway },
 	_left_buffer { new uint8_t[CAMERA_RESOLUTION * 4] },
 	_right_buffer { new uint8_t[CAMERA_RESOLUTION * 4] },
@@ -23,7 +23,7 @@ ClientCamera::ClientCamera(Gateway::Gateway & gateway) :
 {
 }
 
-ClientCamera::~ClientCamera()
+Camera::~Camera()
 {
 	if (_left_buffer != nullptr) {
 		delete[] _left_buffer;
@@ -35,14 +35,14 @@ ClientCamera::~ClientCamera()
 	}
 }
 
-void ClientCamera::start()
+void Camera::start()
 {
 	if (!_running) {
-		_thread = std::thread(&ClientCamera::_read, this);
+		_thread = std::thread(&Camera::_read, this);
 	}
 }
 
-void ClientCamera::stop() noexcept
+void Camera::stop() noexcept
 {
 	if (_running.load()) {
 		_running.store(false);
@@ -50,18 +50,18 @@ void ClientCamera::stop() noexcept
 	}
 }
 
-void ClientCamera::share_screen_buffers(const uint8_t ** left, const uint8_t ** right) const noexcept
+void Camera::share_screen_buffers(const uint8_t ** left, const uint8_t ** right) const noexcept
 {
 	*left = _left_buffer;
 	*right = _right_buffer;
 }
 
-bool ClientCamera::is_running() const noexcept
+bool Camera::is_running() const noexcept
 {
 	return _running.load();
 }
 
-void ClientCamera::_read() noexcept
+void Camera::_read() noexcept
 {
 	_running.store(true);
 	while (_running.load()) {
@@ -90,7 +90,7 @@ void ClientCamera::_read() noexcept
  * Row 1: {B,G,B,G,repeating ...} [for all ODD rows]
  * Row ...: {repeating ...}
  */
-void ClientCamera::_update_buffers(
+void Camera::_update_buffers(
 	const std::shared_ptr<ApiStereoCameraPacket> & packet,
 	const uint8_t * data_buffer,
 	size_t data_size)

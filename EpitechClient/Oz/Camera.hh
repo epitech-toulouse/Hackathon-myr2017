@@ -12,13 +12,13 @@
 
 namespace Oz {
 
-class ClientCamera
+class Camera
 {
-	friend class ClientCameraStateError;
+	friend class CameraStateError;
 
 public:
-	explicit ClientCamera(Gateway::Gateway & gateway);
-	~ClientCamera();
+	explicit Camera(Gateway::Gateway & gateway);
+	~Camera();
 	void start();
 	void stop() noexcept;
 	void share_screen_buffers(const uint8_t **, const uint8_t **) const noexcept;

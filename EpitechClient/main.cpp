@@ -9,8 +9,8 @@
  */
 static int run(
 	Gateway::Gateway & gateway,
-	Oz::ClientCamera & camera,
-	ClientDisplay & display
+	Oz::Camera & camera,
+	Display::Display & display
 ) {
 	display.set_target_camera(&camera);
 	gateway.start();
@@ -31,8 +31,8 @@ static int run(
 int main(int, char **)
 {
 	Gateway::Gateway gateway("127.0.0.1", 5559, 5558);
-	Oz::ClientCamera camera(gateway);
-	ClientDisplay display;
+	Oz::Camera camera(gateway);
+	Display::Display display;
 
 	try {
 		return run(gateway, camera, display);

@@ -8,7 +8,7 @@ ClientException::ClientException(const char * what_arg) :
 
 namespace Oz {
 
-ClientCameraStateError::ClientCameraStateError(const ClientCamera *, const char * msg) :
+CameraStateError::CameraStateError(const Camera *, const char * msg) :
 	ClientException(msg)
 { }
 

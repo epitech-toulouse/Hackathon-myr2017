@@ -3,10 +3,13 @@
 #include <SFML/Graphics.hpp>
 #include "Display/Display.hh"
 
+namespace Display
+{
+
 static const size_t CAMERA_CAPTURE_WIDTH = 752 / 2;
 static const size_t CAMERA_CAPTURE_HEIGHT = 480 / 2;
 
-ClientDisplay::ClientDisplay(void) :
+Display::Display(void) :
 	_window_title { "Naio Move your Robot 2017 :: Epitech's API Client" },
 	_window_framerate { 60 },
 	_left_buffer { nullptr },
@@ -15,7 +18,7 @@ ClientDisplay::ClientDisplay(void) :
 {
 }
 
-void ClientDisplay::set_target_camera(Oz::ClientCamera * camera) noexcept
+void Display::set_target_camera(Oz::Camera * camera) noexcept
 {
 	_camera = camera;
 	if (_camera != nullptr) {
@@ -23,7 +26,7 @@ void ClientDisplay::set_target_camera(Oz::ClientCamera * camera) noexcept
 	}
 }
 
-void ClientDisplay::show() noexcept
+void Display::show() noexcept
 {
 	const size_t border_width = 3;
 	sf::VideoMode window_video_mode(CAMERA_CAPTURE_WIDTH*2+border_width, CAMERA_CAPTURE_HEIGHT);
@@ -51,4 +54,6 @@ void ClientDisplay::show() noexcept
 		window.draw(right_sprite);
 		window.display();
 	}
+}
+
 }

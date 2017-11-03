@@ -15,11 +15,11 @@ struct ClientException : public std::runtime_error
 namespace Oz
 {
 
-class ClientCamera; // Forward declaration
+class Camera; // Forward declaration
 
-struct ClientCameraStateError : public ClientException
+struct CameraStateError : public ClientException
 {
-	explicit ClientCameraStateError(const ClientCamera * parent, const char * msg);
+	explicit CameraStateError(const Camera * parent, const char * msg);
 };
 
 } /* namespace Oz */
