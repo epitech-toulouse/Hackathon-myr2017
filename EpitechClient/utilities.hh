@@ -26,3 +26,4 @@ inline bool is_image_packet_bayer(const std::shared_ptr<ApiStereoCameraPacket> &
 }
 
 size_t zlib_uncompress(uint8_t * dest, const uint8_t * src, long unsigned int dest_max_size, long unsigned int src_size);
+void bayer_grbg32_to_rgba24(uint8_t * dst, const uint8_t * src, size_t xres, size_t yres);

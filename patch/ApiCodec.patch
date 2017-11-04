@@ -1,0 +1,25 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 380a261..a6c0006 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -51,6 +51,7 @@ elseif( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
+     if( CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9" )
+         message( FATAL_ERROR "Insufficient gcc version ; should be >= 4.9" )
+     endif()
++    add_compile_options( -Wno-implicit-fallthrough )
+ endif()
+ 
+ #--------------------------------------------------------------------------------------------------
+diff --git a/src/ApiCodec/HaGpsPacket.cpp b/src/ApiCodec/HaGpsPacket.cpp
+index 311fdda..963ece8 100644
+--- a/src/ApiCodec/HaGpsPacket.cpp
++++ b/src/ApiCodec/HaGpsPacket.cpp
+@@ -10,7 +10,7 @@ HaGpsPacket::HaGpsPacket( )
+ 
+ //=============================================================================
+ //
+-HaGpsPacket::HaGpsPacket( ulong time_, double lat_, double lon_, double alt_, uint8_t unit_, uint8_t satUsed_, uint8_t quality_,double groundSpeed_ )
++HaGpsPacket::HaGpsPacket( uint64_t time_, double lat_, double lon_, double alt_, uint8_t unit_, uint8_t satUsed_, uint8_t quality_,double groundSpeed_ )
+ 	: 	time{ time_ },
+ 		lat{ lat_ },
+ 		lon{ lon_ },
