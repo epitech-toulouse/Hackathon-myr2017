@@ -1,27 +1,25 @@
-#ifndef MOTOR_HH
-#define MOTOR_HH
-	#include <iostream>
-	#include <thread>
-	#include <mutex>
+#pragma once
 
-	#include "ApiCodec/Naio01Codec.hpp"
+#include <iostream>
+#include <atomic>
+#include <thread>
+#include <ApiCodec/ApiMotorsPacket.hpp>
+#include "Gateway/Gateway.hh"
 
-	class Motor{
-	private:
-		bool stopServerReadThreadAsked_;
-		bool serverReadthreadStarted_;
-		std::thread serverReadThread_;
+namespace Oz {
 
-		bool stopServerWriteThreadAsked_;
-		bool serverWriteThreadStarted_;
-		std::thread serverWriteThread_;
+class Motor{
+private:
+	Gateway::Gateway & _gateway;
+	std::atomic<bool> _running;
+	std::thread _thread;
+public:
+	explicit Motor(Gateway::Gateway & gateway);
+	~Motor();
 
-		int socket_desc_;
-	public:
-		Motor();
-		~Motor();
+	void start();
+	void stop();
+	void threadHandler();
+};
 
-		void server_read_thread();
-		void server_write_thread();
-	};
-#endif
+}

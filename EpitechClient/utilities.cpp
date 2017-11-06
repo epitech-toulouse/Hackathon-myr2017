@@ -25,3 +25,23 @@ size_t zlib_uncompress(uint8_t * dest, const uint8_t * src, long unsigned int de
 	}
 	return dest_size;
 }
+
+/*
+ * Converts 32-bits Bayer GRBG images to 24-bits RGBA images usable by the SFML.
+ * Parameters `xres` and `yres` must match the resolution of the destination image.
+ */
+void bayer_grbg32_to_rgba24(uint8_t * dst, const uint8_t * src, size_t xres, size_t yres)
+{
+	size_t di = 0; // destination index;
+	size_t si = 0; // source index;
+	for (size_t y = 0 ; y < yres ; ++y) {
+		for (size_t x = 0 ; x < xres ; ++x) {
+			di = (x + y * xres) * 4;
+			si = (x + y * xres * 2) * 2;
+			dst[di] = src[si + 1];
+			dst[di + 1] = static_cast<uint8_t>((src[si] >> 1) + (src[si + xres * 2 + 1] >> 1));
+			dst[di + 2] = src[si + xres * 2];
+			dst[di + 3] = 255;
+		}
+	}
+}

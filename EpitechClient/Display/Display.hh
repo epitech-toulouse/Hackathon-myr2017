@@ -3,11 +3,14 @@
 #include <SFML/Config.hpp>
 #include "Oz/Camera.hh"
 
-class ClientDisplay
+namespace Display
+{
+
+class Display
 {
 public:
-	explicit ClientDisplay(void);
-	void set_target_camera(Oz::ClientCamera * camera) noexcept;
+	explicit Display(void);
+	void set_target_camera(Oz::Camera * camera) noexcept;
 	void show() noexcept;
 
 private:
@@ -15,5 +18,7 @@ private:
 	const unsigned _window_framerate;
 	const sf::Uint8 * _left_buffer;
 	const sf::Uint8 * _right_buffer;
-	const Oz::ClientCamera * _camera;
+	const Oz::Camera * _camera;
 };
+
+}

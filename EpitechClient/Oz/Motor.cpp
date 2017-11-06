@@ -1,10 +1,13 @@
 #include "Motor.hh"
 
-Motor::Motor(){
-	std::cout << "Hello i'm a motor" << std::endl;
+namespace Oz {
 
-    serverReadThread_ = std::thread( &Motor::server_read_thread, this );
-    serverWriteThread_ = std::thread( &Motor::server_write_thread, this );
+    static const std::chrono::milliseconds WAIT_TIME_MS (1000);
+
+Motor::Motor(Gateway::Gateway &gateway):
+    _gateway { gateway },
+    _running { false }{
+	std::cout << "Hello i'm a motor" << std::endl;
 
     std::cout << "Thread initialised!!" << std::endl;
 }
@@ -13,40 +16,29 @@ Motor::~Motor(){
 	std::cout << "Motor destroyed" << std::endl;
 }
 
-void	Motor::server_read_thread(){
-	std::cout << "Starting server read thread !" << std::endl;
+void    Motor::start(){
+    if (!_running)
+        _thread = std::thread(&Motor::threadHandler, this);
+}
 
-    uint8_t receiveBuffer[ 4000000 ];
-
-    while( !stopServerReadThreadAsked_ )
-    {
-        // any time : read incoming messages.
-        int readSize = (int) read( socket_desc_, receiveBuffer, 4000000 );
-
-        if (readSize > 0)
-        {
-            bool packetHeaderDetected = false;
-
-            bool atLeastOnePacketReceived = naioCodec_.decode( receiveBuffer, static_cast<uint>( readSize ), packetHeaderDetected );
-
-            // manage received messages
-            if (atLeastOnePacketReceived)
-            {
-            	std::cout << readSize << std::endl;
-                for ( auto &&packetPtr : naioCodec_.currentBasePacketList )
-                {
-                    manageReceivedPacket( packetPtr );
-                }
-
-                naioCodec_.currentBasePacketList.clear();
-            }
-        }
+void    Motor::stop(){
+    if (_running){
+        _running = false;
+        _thread.join();
     }
-
-    serverReadthreadStarted_ = false;
-    stopServerReadThreadAsked_= false;
 }
 
-void	Motor::server_write_thread(){
-	std::cout << "I'm the write thread" << std::endl;
+void	Motor::threadHandler(){
+    _running = true;
+    std::cout << "I'm a thread" << std::endl;
+    while (_running){
+        std::cout << "I'm runned" << std::endl;
+        //void Gateway::enqueue(std::unique_ptr<BaseNaio01Packet> && packet)
+        //std::unique_ptr<ApiMotorsPacket> toto(new ApiMotorsPacket(10, 10));
+        _gateway.enqueue(std::make_unique<ApiMotorsPacket>(10, 10));
+        std::this_thread::sleep_for(WAIT_TIME_MS);
+    }
+    std::cout << "thread destroyed" << std::endl;
 }
+}
+
