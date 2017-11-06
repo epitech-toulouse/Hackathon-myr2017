@@ -22,16 +22,19 @@ static void lidar_noise(Display::Display & display, Gateway::Gateway & gateway)
 	}
 }
 
-static void get_lidar_info(Gateway::Gateway & gateway)
+static void get_lidar_info(Display::Display & display, Gateway::Gateway & gateway)
 {
+	std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> dist;
+	int i = 0;
 	while (gateway.is_running()) {
-		std::cout << "test" << std::endl;
 		std::shared_ptr<HaLidarPacket> halidarpacket = gateway.get<HaLidarPacket>();
-		std::cout << "test2" << std::endl;		
-		if (halidarpacket != NULL) {				
-			std::string str(std::to_string(halidarpacket->distance[100]));		
-			std::cout << "test3" << std::endl;		
-			std::cout << str << std::endl;
+		if (halidarpacket != nullptr) {
+			for (auto & value : dist) {
+				value = static_cast<uint16_t>(halidarpacket->distance[i]);
+				i = i + 1;
+			}
+			display.update_lidar(dist);
+			std::this_thread::sleep_for(WAIT_TIME_MS);
 		}
 	}
 }
@@ -54,12 +57,12 @@ static int run(
 	using Command = ApiCommandPacket::CommandType;
 	gateway.enqueue(std::make_unique<ApiCommandPacket>(Command::TURN_ON_IMAGE_ZLIB_COMPRESSION));
 	gateway.enqueue(std::make_unique<ApiCommandPacket>(Command::TURN_ON_API_RAW_STEREO_CAMERA_PACKET));
-	std::thread lidar_noise_thread = std::thread(lidar_noise, std::ref(display), std::ref(gateway));
-	std::thread get_lidar_info_thread = std::thread(get_lidar_info, std::ref(gateway));
+	//std::thread lidar_noise_thread = std::thread(lidar_noise, std::ref(display), std::ref(gateway));
+	std::thread get_lidar_info_thread = std::thread(get_lidar_info, std::ref(display), std::ref(gateway));
 	display.show();
 	camera.stop();
 	gateway.stop();
-	lidar_noise_thread.join();
+	//lidar_noise_thread.join();
 	get_lidar_info_thread.join();
 	return 0;
 }
