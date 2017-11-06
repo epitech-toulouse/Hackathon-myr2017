@@ -9,16 +9,10 @@ using std::chrono::duration_cast;
 
 namespace Oz {
 
-static const size_t CAMERA_RESOLUTION_X = 752 / 2;
-static const size_t CAMERA_RESOLUTION_Y = 480 / 2;
-static const size_t CAMERA_RESOLUTION = CAMERA_RESOLUTION_X * CAMERA_RESOLUTION_Y;
-static const size_t BUFFER_SIZE = 0x400000;
-static const std::chrono::milliseconds WAIT_TIME_MS (100);
-
 Camera::Camera(Gateway::Gateway & gateway) :
 	_gateway { gateway },
-	_left_buffer { new uint8_t[CAMERA_RESOLUTION * 4] },
-	_right_buffer { new uint8_t[CAMERA_RESOLUTION * 4] },
+	_left_buffer { new uint8_t[CAMERA_CAPTURE_RESOLUTION * 4] },
+	_right_buffer { new uint8_t[CAMERA_CAPTURE_RESOLUTION * 4] },
 	_running { false }
 {
 }
@@ -71,10 +65,10 @@ void Camera::_read() noexcept
 			continue;
 		}
 		if (is_image_packet_zlib(packet)) {
-			std::unique_ptr<uint8_t[]> data_buffer (new uint8_t[BUFFER_SIZE]);
+			std::unique_ptr<uint8_t[]> data_buffer (new uint8_t[CAMERA_BUFFER_SIZE]);
 			size_t data_size = zlib_uncompress(
 				data_buffer.get(), packet->dataBuffer->data(),
-				BUFFER_SIZE, packet->dataBuffer->size()
+				CAMERA_BUFFER_SIZE, packet->dataBuffer->size()
 			);
 			this->_update_buffers(packet, data_buffer.get(), data_size);
 		} else {
@@ -96,27 +90,27 @@ void Camera::_update_buffers(
 	size_t data_size)
 {
 	if (is_image_packet_bayer(packet)) {
-		if (data_size < CAMERA_RESOLUTION * 8) {
+		if (data_size < CAMERA_CAPTURE_RESOLUTION * 8) {
 			std::cerr << "Bad bayer stereo image size!" << std::endl;
 			return;
 		}
-		bayer_grbg32_to_rgba24(_left_buffer, data_buffer, CAMERA_RESOLUTION_X, CAMERA_RESOLUTION_Y);
-		bayer_grbg32_to_rgba24(_right_buffer, data_buffer + CAMERA_RESOLUTION * 4, CAMERA_RESOLUTION_X, CAMERA_RESOLUTION_Y);
+		bayer_grbg32_to_rgba24(_left_buffer, data_buffer, CAMERA_CAPTURE_WIDTH, CAMERA_CAPTURE_HEIGHT);
+		bayer_grbg32_to_rgba24(_right_buffer, data_buffer + CAMERA_CAPTURE_RESOLUTION * 4, CAMERA_CAPTURE_WIDTH, CAMERA_CAPTURE_HEIGHT);
 	} else {
-		if (data_size < CAMERA_RESOLUTION * 3 * 2) {
+		if (data_size < CAMERA_CAPTURE_RESOLUTION * 3 * 2) {
 			std::cerr << "Bad colorized image size!" << std::endl;
 			return;
 		}
-		for (size_t x = 0 ; x < CAMERA_RESOLUTION * 4 ; ++x) {
+		for (size_t x = 0 ; x < CAMERA_CAPTURE_RESOLUTION * 4 ; ++x) {
 			_left_buffer[(x*4) + 0] = data_buffer[(x*3) + 0];
 			_left_buffer[(x*4) + 1] = data_buffer[(x*3) + 1];
 			_left_buffer[(x*4) + 2] = data_buffer[(x*3) + 2];
 			_left_buffer[(x*4) + 3] = 255;
 		}
-		for (size_t x = 0 ; x < CAMERA_RESOLUTION * 4 ; ++x) {
-			_right_buffer[(x*4) + 0] = data_buffer[(x*3) + 0 + CAMERA_RESOLUTION * 4];
-			_right_buffer[(x*4) + 1] = data_buffer[(x*3) + 1 + CAMERA_RESOLUTION * 4];
-			_right_buffer[(x*4) + 2] = data_buffer[(x*3) + 2 + CAMERA_RESOLUTION * 4];
+		for (size_t x = 0 ; x < CAMERA_CAPTURE_RESOLUTION * 4 ; ++x) {
+			_right_buffer[(x*4) + 0] = data_buffer[(x*3) + 0 + CAMERA_CAPTURE_RESOLUTION * 4];
+			_right_buffer[(x*4) + 1] = data_buffer[(x*3) + 1 + CAMERA_CAPTURE_RESOLUTION * 4];
+			_right_buffer[(x*4) + 2] = data_buffer[(x*3) + 2 + CAMERA_CAPTURE_RESOLUTION * 4];
 			_right_buffer[(x*4) + 3] = 255;
 		}
 	}
