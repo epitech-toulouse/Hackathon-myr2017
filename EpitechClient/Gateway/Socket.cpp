@@ -41,7 +41,7 @@ void Socket::connect()
 	struct sockaddr_in target;
 	target.sin_addr.s_addr = ::inet_addr(_host.c_str());
 	target.sin_family = AF_INET;
-	target.sin_port = ::htons(_port);
+	target.sin_port = htons(_port);
 	_fd = ::socket(AF_INET, SOCK_STREAM, 0);
 	if (0 > _fd) {
 		throw SocketConnectError(this, strerror(errno));

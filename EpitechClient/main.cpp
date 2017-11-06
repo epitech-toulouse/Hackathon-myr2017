@@ -1,7 +1,7 @@
 #include <functional>
 #include <ApiCodec/ApiCommandPacket.hpp>
 #include "Gateway/Gateway.hh"
-#include "Oz/Camera.hh"
+#include "Oz/Oz.hh"
 #include "Display/Display.hh"
 #include "exceptions.hh"
 #include "constants.hh"
@@ -49,11 +49,11 @@ static int run(
 int main(int, char **)
 {
 	Gateway::Gateway gateway("127.0.0.1", 5559, 5558);
-	Oz::Camera camera(gateway);
+	Oz::Oz oz(gateway);
 	Display::Display display;
 
 	try {
-		return run(gateway, camera, display);
+	  return run(gateway, oz.getCamera(), display);
 	} catch (const ClientException & error) {
 		std::cerr << "fatal: " << error.what() << std::endl;
 	}
