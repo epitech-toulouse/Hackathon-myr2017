@@ -12,7 +12,7 @@ RenderLidar::RenderLidar(void) :
 	_angle_grid_lines { sf::Lines, 28 * 2 }
 {
 	/* Background */
-	double half = 1000; /* Background half size */
+	float half = 1000.0f; /* Background half size */
 	_background[0].position = sf::Vector2f(-half, -half);
 	_background[1].position = sf::Vector2f(-half, half);
 	_background[2].position = sf::Vector2f(half, -half);
@@ -31,13 +31,13 @@ RenderLidar::RenderLidar(void) :
 		_angle_grid_lines[idx].position = sf::Vector2f(0, 0);
 		_angle_grid_lines[idx].color = sf::Color(_grid_lines_color);
 		++idx;
-		_angle_grid_lines[idx].position = sf::Vector2f(x, y);
+		_angle_grid_lines[idx].position = sf::Vector2f(static_cast<float>(x), static_cast<float>(y));
 		_angle_grid_lines[idx].color = sf::Color(_grid_lines_color);
 		angle += 10.0;
 	}
-	float radius = 0.0;
+	float radius = 0.0f;
 	for (auto && line : _radius_grid_lines) {
-		radius += 50.0;
+		radius += 50.0f;
 		line.setPosition(-radius, -radius);
 		line.setRadius(radius);
 		line.setFillColor(sf::Color(0));
