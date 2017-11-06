@@ -2,12 +2,10 @@
 #include <ApiCodec/ApiWatchdogPacket.hpp>
 #include "Gateway.hh"
 #include "exceptions.hh"
+#include "constants.hh"
 
 namespace Gateway
 {
-
-static const size_t BUFFER_SIZE = 0x400000;
-static const std::chrono::milliseconds WAIT_TIME_MS (100);
 
 Gateway::Gateway(const std::string & hostAddress, uint16_t hostMainPort, uint16_t hostCameraPort) :
 	_running { false },
@@ -61,7 +59,7 @@ void Gateway::enqueue(std::unique_ptr<BaseNaio01Packet> && packet)
 void Gateway::_read() noexcept
 {
 	try {
-		std::unique_ptr<uint8_t[]> rx_buffer(new uint8_t[BUFFER_SIZE]);
+		std::unique_ptr<uint8_t[]> rx_buffer(new uint8_t[GATEWAY_BUFFER_SIZE]);
 		while (_running.load()) {
 			this->_decodePackets(rx_buffer.get(), _main_socket);
 			this->_decodePackets(rx_buffer.get(), _camera_socket);
@@ -97,7 +95,7 @@ void Gateway::_write() noexcept
 void Gateway::_decodePackets(uint8_t * rx_buffer, const Socket & sock)
 {
 	Naio01Codec codec;
-	size_t rx_bytes = sock.read(rx_buffer, BUFFER_SIZE);
+	size_t rx_bytes = sock.read(rx_buffer, GATEWAY_BUFFER_SIZE);
 	bool has_header_packet = false;
 	if (rx_bytes > 0 && codec.decode(rx_buffer, static_cast<uint>(rx_bytes), has_header_packet)) {
 		if (has_header_packet) {

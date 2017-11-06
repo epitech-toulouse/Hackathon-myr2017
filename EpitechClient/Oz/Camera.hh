@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <ApiCodec/ApiStereoCameraPacket.hpp>
 #include "Gateway/Gateway.hh"
+#include "constants.hh"
 
 namespace Oz {
 
