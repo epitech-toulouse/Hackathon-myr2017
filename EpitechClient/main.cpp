@@ -24,14 +24,15 @@ static void lidar_noise(Display::Display & display, Gateway::Gateway & gateway)
 
 static void get_lidar_info(Gateway::Gateway & gateway)
 {
-	std::array<uint8_t, 32> buffer;
 	while (gateway.is_running()) {
 		std::cout << "test" << std::endl;
 		std::shared_ptr<HaLidarPacket> halidarpacket = gateway.get<HaLidarPacket>();
-		std::cout << "test2" << std::endl;
-		halidarpacket.get()->decode(buffer, 32);
-		std::cout << "test3" << std::endl;
-		//std::count << std::to_string(buffer[0]);
+		std::cout << "test2" << std::endl;		
+		if (halidarpacket != NULL) {				
+			std::string str(std::to_string(halidarpacket->distance[100]));		
+			std::cout << "test3" << std::endl;		
+			std::cout << str << std::endl;
+		}
 	}
 }
 
