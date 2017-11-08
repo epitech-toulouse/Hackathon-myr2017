@@ -1,14 +1,18 @@
 #pragma once
 
 #include <stdexcept>
+#include <initializer_list>
 
 /**
  * Base exception class for all EpitechClient's exceptions.
  * Shall never be raised itself, use descendents.
  */
-struct ClientException : public std::runtime_error
+struct ClientException : public std::exception
 {
-	explicit ClientException(const char * what_arg);
+	static const size_t bufsiz = 1024;
+	char text[bufsiz];
+	ClientException(std::initializer_list<const char *> args);
+	virtual const char * what() const noexcept;
 };
 
 
@@ -30,31 +34,35 @@ namespace Gateway
 
 class Socket; // Forward declaration
 
-struct SocketException: public ClientException
+struct SocketException : public ClientException
 {
-	explicit SocketException(const Socket * parent, const char * msg);
-	std::string host;
-	uint16_t port;
+	SocketException(const Socket * parent, std::initializer_list<const char *> args);
+	const Socket * instance;
 };
 
 struct SocketConnectError : public SocketException
 {
-	explicit SocketConnectError(const Socket * parent, const char * msg);
-};
-
-struct SocketDisconnectError : public SocketException
-{
-	explicit SocketDisconnectError(const Socket * parent, const char * msg);
+	explicit SocketConnectError(const Socket * parent, const char * name, const char * msg);
 };
 
 struct SocketReadError : public SocketException
 {
-	explicit SocketReadError(const Socket * parent, const char * msg);
+	explicit SocketReadError(const Socket * parent, const char * name, const char * msg);
 };
 
 struct SocketWriteError : public SocketException
 {
-	explicit SocketWriteError(const Socket * parent, const char * msg);
+	explicit SocketWriteError(const Socket * parent, const char * name, const char * msg);
+};
+
+struct SocketPeerResetError : public SocketException
+{
+	explicit SocketPeerResetError(const Socket * parent, const char * name, const char * msg);
+};
+
+struct SocketOperationalError : public SocketException
+{
+	explicit SocketOperationalError(const Socket * parent, const char * name, const char * msg);
 };
 
 } /* namespace Gateway */

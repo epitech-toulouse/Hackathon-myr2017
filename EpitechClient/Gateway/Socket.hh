@@ -1,38 +1,54 @@
 #pragma once
 
-#include <atomic>
-#include <chrono>
+#include <mutex>
 #include <string>
-#include <thread>
 #include <vector>
-#include <cstring>
 #include <cstdint>
+#include <iosfwd>
 
 namespace Gateway
 {
 
 class Socket
 {
-	friend class SocketException;
-
 	Socket(const Socket &) = delete;
 	Socket & operator=(const Socket &) = delete;
 
 public:
-	explicit Socket(const std::string & host, uint16_t port);
+	friend struct SocketException;
+	friend struct SocketConnectError;
+	friend struct SocketReadError;
+	friend struct SocketWriteError;
+	friend struct SocketPeerResetError;
+	friend struct SocketOperationalError;
+	friend std::ostream & operator<<(std::ostream &, const Gateway::Socket &);
+
+public:
+	explicit Socket(const std::string & host, const std::string & port, size_t buffer_size = 8192);
 	~Socket();
-	int get_fd() const noexcept;
+	const std::string & get_host() const noexcept;
+	const std::string & get_port() const noexcept;
+	std::string get_authority() const noexcept;
 	bool is_connected() const noexcept;
 	void connect();
-	void disconnect();
-	size_t read(void * buffer, size_t bytes) const;
-	size_t write(void * buffer, size_t bytes) const;
+	void disconnect() noexcept;
+	void force_close() noexcept;
+	void read(std::basic_string<uint8_t> & response);
+	void write(const std::basic_string<uint8_t> & request);
+
+private:
+	size_t _buffer_recv();
+	void _nonblock(bool);
 
 private:
 	int _fd;
-	std::atomic<bool> _connected; // TODO: Is atomic really necessary ?
+	bool _connected;
+	int _options;
+	bool _nonblock_option;
 	std::string _host;
-	uint16_t _port;
+	std::string _port;
+	std::vector<uint8_t> _buffer;
+	std::mutex _lock;
 };
 
 }

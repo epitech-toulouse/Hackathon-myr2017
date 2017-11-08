@@ -21,7 +21,7 @@ namespace Playground
     int run(void);
 
   public:
-    explicit Playground(const std::string &, uint16_t, uint16_t);
+    explicit Playground(const std::string &, const std::string &, const std::string &);
     ~Playground() {};
 
     Oz::Oz & getOz(void);

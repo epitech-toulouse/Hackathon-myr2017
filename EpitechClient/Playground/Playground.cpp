@@ -2,8 +2,8 @@
 
 namespace Playground
 {
-  Playground::Playground(const std::string& hostAddress, uint16_t hostMainPort, uint16_t hostCameraPort) :
-    gateway { hostAddress, hostMainPort, hostCameraPort },
+  Playground::Playground(const std::string & host, const std::string & main_port, const std::string & camera_port) :
+    gateway { host, main_port, camera_port },
     oz { this->gateway },
     display {}
   {
@@ -32,7 +32,6 @@ namespace Playground
     this->display.set_target_camera(&(this->oz.getCamera()));
     this->gateway.start();
     this->oz.getCamera().start();
-    std::cout << "Waiting for connection..." << std::endl;
     while (!this->oz.getCamera().is_running() || !this->gateway.is_running()) {
       std::this_thread::sleep_for(WAIT_TIME_MS);
     }
