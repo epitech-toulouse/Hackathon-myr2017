@@ -14,3 +14,5 @@ static const double LIDAR_END_ANGLE = 225.0;
 static const std::chrono::milliseconds WAIT_TIME_MS { 100 };
 
 static const size_t GATEWAY_BUFFER_SIZE = 0x400000;
+
+static const std::chrono::milliseconds SOCKET_RECONNECT_DELAY { 2000 };
