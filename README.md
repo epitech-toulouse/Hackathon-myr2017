@@ -5,22 +5,13 @@ Implementation for the hackaton Move Your Robot '17
 Building
 --------
 
-Simply run the following command:
+Simply run the following commands:
 
 ```sh
-$ ./build.sh
-```
-
-Or to build it step-by-step:
-
-```sh
-$ git submodule update --init --recursive
-$ cd ApiCodec
-$ patch -p1 --forward < ../patch/ApiCodec.patch
-$ cd ..
+$ git submodule update --init --recursive  # not required on recent git versions
 $ mkdir build
 $ cd build
-$ cmake -DCMAKE_BUILD_TYPE=Release ..
+$ cmake ..
 $ make
 ```
 
