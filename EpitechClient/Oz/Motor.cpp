@@ -6,7 +6,10 @@ namespace Oz {
 
 Motor::Motor(Gateway::Gateway &gateway):
     _gateway { gateway },
-    _running { false }{
+    _running { false },
+    _speed { 0 },
+    _angleSpeed { 10 },
+    _angle { 0 }{
 }
 
 Motor::~Motor(){
@@ -27,10 +30,25 @@ void    Motor::stop(){
 void	Motor::threadHandler(){
     _running = true;
     while (_running){
-        //void Gateway::enqueue(std::unique_ptr<BaseNaio01Packet> && packet)
-        //std::unique_ptr<ApiMotorsPacket> toto(new ApiMotorsPacket(10, 10));
-        _gateway.enqueue(std::make_unique<ApiMotorsPacket>(10, 10));
+        _gateway.enqueue(std::make_unique<ApiMotorsPacket>(_speed + ((_angleSpeed/2) * (_angle/128)), _speed - ((_angleSpeed/2) * (_angle/128))));
         std::this_thread::sleep_for(WAIT_TIME_MS);
     }
 }
+
+void    Motor::setSpeed(int8_t speed){
+    _speed = speed;
+}
+
+void    Motor::setAngle(int8_t angle){
+    _angle = angle;
+}
+
+int8_t  Motor::getSpeed() const{
+    return(_speed);
+}
+
+int8_t  Motor::getAngle() const{
+    return(_angle);
+}
+
 }
