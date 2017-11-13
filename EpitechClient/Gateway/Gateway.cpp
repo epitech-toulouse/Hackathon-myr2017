@@ -273,7 +273,7 @@ void Gateway::_decode_packets(Naio01Codec & codec, std::basic_string<uint8_t> & 
 
 void Gateway::_set(std::shared_ptr<BaseNaio01Packet> packet) noexcept
 {
-	_last_packets.emplace(std::type_index(typeid(*packet)), packet);
+	_last_packets[std::type_index(typeid(*packet))] = packet;
 }
 
 }
