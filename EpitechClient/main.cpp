@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #include <functional>
 #include <ApiCodec/ApiCommandPacket.hpp>
 #include <ApiCodec/HaLidarPacket.hpp>
@@ -66,17 +67,11 @@ static int run(
 	get_lidar_info_thread.join();
 	return 0;
 }
+=======
+#include "Playground/Playground.hh"
+>>>>>>> 437273d70176d43e2e39df55b8292fc6b2d78322
 
 int main(int, char **)
 {
-	Gateway::Gateway gateway("127.0.0.1", 5559, 5558);
-	Oz::Camera camera(gateway);
-	Display::Display display;
-
-	try {
-		return run(gateway, camera, display);
-	} catch (const ClientException & error) {
-		std::cerr << "fatal: " << error.what() << std::endl;
-	}
-	return 1;
+  Playground::Playground playground("127.0.0.1", "5559", "5558");
 }
