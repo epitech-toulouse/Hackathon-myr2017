@@ -1,3 +1,4 @@
+#include <ApiCodec/HaLidarPacket.hpp>
 #include "Playground/Playground.hh"
 
 namespace Playground
@@ -16,16 +17,22 @@ namespace Playground
     }
   }
 
-  /* Extern function to launch thread */
-  static void lidar_noise(Display::Display & display, Gateway::Gateway & gateway)
+  static void get_lidar_info(Display::Display & display, Gateway::Gateway & gateway)
   {
     std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> dist;
+    int i = 0;
     while (gateway.is_running()) {
-      for (auto & value : dist) {
-	value = static_cast<uint16_t>(float(random()) / float(RAND_MAX) * 400);
+      std::shared_ptr<HaLidarPacket> halidarpacket = gateway.get<HaLidarPacket>();
+      if (halidarpacket != nullptr) {
+        for (auto & value : dist) {
+          value = static_cast<uint16_t>(halidarpacket->distance[i]);
+          printf("%d\n", i);
+          i = i + 1;
+        }
+        display.update_lidar(dist);
+        i = 0;
+        std::this_thread::sleep_for(WAIT_TIME_MS);
       }
-      display.update_lidar(dist);
-      std::this_thread::sleep_for(WAIT_TIME_MS);
     }
   }
 
@@ -39,12 +46,11 @@ namespace Playground
     using Command = ApiCommandPacket::CommandType;
     this->gateway.enqueue(std::make_unique<ApiCommandPacket>(Command::TURN_OFF_IMAGE_ZLIB_COMPRESSION));
     this->gateway.enqueue(std::make_unique<ApiCommandPacket>(Command::TURN_ON_API_RAW_STEREO_CAMERA_PACKET));
-    //    std::thread lidar_noise_thread = std::thread(this->lidar_noise, std::ref(this->display), std::ref(this->gateway));
-    std::thread lidar_noise_thread = std::thread(lidar_noise, std::ref(this->display), std::ref(this->gateway));
+    std::thread get_lidar_info_thread = std::thread(get_lidar_info, std::ref(display), std::ref(gateway));
     this->display.show();
     this->oz.getCamera().stop();
     this->gateway.stop();
-    lidar_noise_thread.join();
+    get_lidar_info_thread.join();
     return 0;
   }
   
