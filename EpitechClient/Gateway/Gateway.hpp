@@ -4,6 +4,12 @@ namespace Gateway
 {
 
 template<typename T>
+void Gateway::enqueue(std::unique_ptr<T> packet)
+{
+	_packet_queue.push(std::move(packet));
+}
+
+template<typename T>
 inline std::shared_ptr<T> Gateway::get() const noexcept
 {
 	try {
