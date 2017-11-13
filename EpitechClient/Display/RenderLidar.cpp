@@ -49,7 +49,7 @@ RenderLidar::RenderLidar(void) :
 void RenderLidar::update(const std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> & distances)
 {
 	for (size_t angle = 0 ; angle < distances.size() ; ++angle) {
-		double dist = distances[angle];
+		double dist = distances[angle] / 10.0;
 		double x = dist * cos((static_cast<double>(angle) + LIDAR_BEGIN_ANGLE) * M_PI / 180.0);
 		double y = dist * sin((static_cast<double>(angle) + LIDAR_BEGIN_ANGLE) * M_PI / 180.0);
 		_vertices[angle].position = sf::Vector2f(static_cast<float>(x), static_cast<float>(y));
