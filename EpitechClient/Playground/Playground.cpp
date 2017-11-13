@@ -19,16 +19,19 @@ namespace Playground
 
   static void get_lidar_info(Display::Display & display, Gateway::Gateway & gateway)
   {
-    std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> dist;int i = 0;
+    std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> dist;
+    int i = 0;
     while (gateway.is_running()) {
       std::shared_ptr<HaLidarPacket> halidarpacket = gateway.get<HaLidarPacket>();
       if (halidarpacket != nullptr) {
         for (auto & value : dist) {
           value = static_cast<uint16_t>(halidarpacket->distance[i]);
+          printf("%d\n", i);
           i = i + 1;
         }
-          display.update_lidar(dist);
-          std::this_thread::sleep_for(WAIT_TIME_MS);
+        display.update_lidar(dist);
+        i = 0;
+        std::this_thread::sleep_for(WAIT_TIME_MS);
       }
     }
   }
