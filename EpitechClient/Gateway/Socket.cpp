@@ -58,15 +58,6 @@ void Socket::connect()
 	if (_connected) {
 		this->disconnect();
 	}
-<<<<<<< HEAD
-	struct sockaddr_in target;
-	target.sin_addr.s_addr = ::inet_addr(_host.c_str());
-	target.sin_family = AF_INET;
-	target.sin_port = htons(_port);
-	_fd = ::socket(AF_INET, SOCK_STREAM, 0);
-	if (0 > _fd) {
-		throw SocketConnectError(this, strerror(errno));
-=======
 	struct addrinfo hints;
 	struct addrinfo * results = nullptr;
 	std::memset(&hints, 0, sizeof(hints));
@@ -92,7 +83,6 @@ void Socket::connect()
 		}
 		_fd = fd;
 		break;
->>>>>>> 437273d70176d43e2e39df55b8292fc6b2d78322
 	}
 	::freeaddrinfo(results);
 	if (0 > _fd) {
