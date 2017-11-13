@@ -2,8 +2,10 @@
 
 #include <atomic>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <mutex>
+#include <condition_variable>
 #include <queue>
 #include <string>
 #include <thread>
@@ -28,14 +30,20 @@ class Gateway
 	Gateway & operator= (const Gateway &) = delete;
 
 public:
+	typedef std::map<std::string, unsigned long> Stats;
+
+public:
 	explicit Gateway(const std::string & host, const std::string & main_port, const std::string & camera_port);
 	~Gateway();
 	bool is_running() const noexcept;
 	bool is_connected() const noexcept;
+	bool is_command_connected() const noexcept;
+	bool is_camera_connected() const noexcept;
 	void start();
 	void stop();
 	void enable_camera(bool) noexcept;
-	void enqueue(std::unique_ptr<BaseNaio01Packet> && packet);
+	const Stats & get_stats() const noexcept;
+	template<typename T> void enqueue(std::unique_ptr<T> packet);
 	template<typename T> inline std::shared_ptr<T> get() const noexcept;
 
 private:
@@ -46,8 +54,8 @@ private:
 	void _ensure_disconnect(Socket &) noexcept;
 	void _read() noexcept;
 	void _write() noexcept;
-	void _decode_packets(Naio01Codec & codec, std::basic_string<uint8_t> & response);
-	void _set(std::shared_ptr<BaseNaio01Packet> && packet) noexcept;
+	void _decode_packets(Naio01Codec & codec, std::basic_string<uint8_t> & response, const std::string & name);
+	void _set(std::shared_ptr<BaseNaio01Packet> packet) noexcept;
 
 // FIXME: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80985
 #pragma GCC diagnostic push
@@ -66,6 +74,8 @@ private:
 	std::thread _write_thr;
 	bool _enable_camera;
 	std::mutex _connect_mutex;
+	std::condition_variable _connect_condv;
+	Stats _stats;
 };
 
 }

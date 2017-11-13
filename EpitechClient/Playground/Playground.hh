@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <functional>
 #include <ApiCodec/ApiCommandPacket.hpp>
@@ -7,13 +9,15 @@
 #include "Display/Display.hh"
 #include "Gateway/Gateway.hh"
 #include "Oz/Oz.hh"
+#include "System.hh"
 
 namespace Playground
 {
 
   class Playground
-  {    
+  {
   private:
+    System system;
     Gateway::Gateway gateway;
     Oz::Oz oz;
     Display::Display display;

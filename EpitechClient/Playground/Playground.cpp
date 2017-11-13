@@ -4,9 +4,10 @@
 namespace Playground
 {
   Playground::Playground(const std::string & host, const std::string & main_port, const std::string & camera_port) :
+    system { },
     gateway { host, main_port, camera_port },
     oz { this->gateway },
-    display {}
+    display { this->system, this->gateway }
   {
     /* Launch playground */
     try {
@@ -40,7 +41,7 @@ namespace Playground
       std::this_thread::sleep_for(WAIT_TIME_MS);
     }
     using Command = ApiCommandPacket::CommandType;
-    this->gateway.enqueue(std::make_unique<ApiCommandPacket>(Command::TURN_ON_IMAGE_ZLIB_COMPRESSION));
+    this->gateway.enqueue(std::make_unique<ApiCommandPacket>(Command::TURN_OFF_IMAGE_ZLIB_COMPRESSION));
     this->gateway.enqueue(std::make_unique<ApiCommandPacket>(Command::TURN_ON_API_RAW_STEREO_CAMERA_PACKET));
     std::thread get_lidar_info_thread = std::thread(get_lidar_info, std::ref(display), std::ref(gateway));
     this->display.show();

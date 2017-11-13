@@ -55,15 +55,25 @@ bool Camera::is_running() const noexcept
 	return _running.load();
 }
 
+bool Camera::has_image() const noexcept
+{
+	return _has_image;
+}
+
 void Camera::_read() noexcept
 {
 	_running.store(true);
+	_has_image = false;
 	while (_running.load()) {
 		std::shared_ptr<ApiStereoCameraPacket> packet = _gateway.get<ApiStereoCameraPacket>();
 		if (packet == nullptr) {
+			if (!_gateway.is_camera_connected()) {
+				_has_image = false;
+			}
 			std::this_thread::sleep_for(WAIT_TIME_MS);
 			continue;
 		}
+		_has_image = true;
 		if (is_image_packet_zlib(packet)) {
 			std::unique_ptr<uint8_t[]> data_buffer (new uint8_t[CAMERA_BUFFER_SIZE]);
 			size_t data_size = zlib_uncompress(

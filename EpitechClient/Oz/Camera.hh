@@ -24,6 +24,7 @@ public:
 	void stop() noexcept;
 	void share_screen_buffers(const uint8_t **, const uint8_t **) const noexcept;
 	bool is_running() const noexcept;
+	bool has_image() const noexcept;
 
 private:
 	void _read() noexcept;
@@ -34,6 +35,7 @@ private:
 	uint8_t * _left_buffer;
 	uint8_t * _right_buffer;
 	std::atomic<bool> _running;
+	bool _has_image;
 	std::chrono::milliseconds _latest_read;
 	std::thread _thread;
 };
