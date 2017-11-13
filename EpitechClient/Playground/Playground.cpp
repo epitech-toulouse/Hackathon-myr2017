@@ -26,7 +26,6 @@ namespace Playground
       if (halidarpacket != nullptr) {
         for (auto & value : dist) {
           value = static_cast<uint16_t>(halidarpacket->distance[i]);
-          printf("%d\n", i);
           i = i + 1;
         }
         display.update_lidar(dist);
