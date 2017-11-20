@@ -61,3 +61,8 @@ std::string getexe(void)
 		return "";
 	}
 }
+
+bool is_sf_image_empty(const sf::Image & image)
+{
+	return image.getSize() == sf::Vector2u();
+}

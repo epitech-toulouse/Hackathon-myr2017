@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <SFML/Graphics.hpp>
 #include <ApiCodec/ApiStereoCameraPacket.hpp>
 
 /*
@@ -39,3 +40,17 @@ inline bool ends_with(std::string const & value, std::string const & suffix)
 	    return false;
     }
 }
+
+template<typename T, std::size_t N>
+using shared_array_ptr = std::shared_ptr<std::array<T, N>>;
+
+template<typename T, std::size_t N>
+using weak_array_ptr = std::weak_ptr<std::array<T, N>>;
+
+template<typename T, std::size_t N>
+shared_array_ptr<T, N> make_shared_array(void)
+{
+	return std::make_shared<std::array<T, N>>();
+}
+
+bool is_sf_image_empty(const sf::Image &);

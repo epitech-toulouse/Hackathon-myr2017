@@ -20,11 +20,19 @@ using std::dynamic_pointer_cast;
 namespace Gateway
 {
 
-Gateway::Gateway(const std::string & host, const std::string & main_port, const std::string & camera_port) :
+Gateway::Gateway(
+	const std::string & host,
+	const std::string & main_port,
+	const std::string & camera_port,
+	unsigned read_interval,
+	unsigned write_interval
+) :
 	_running { false },
 	_main_socket { host, main_port, 16384 },
 	_camera_socket { host, camera_port, 1048576 },
 	_enable_camera { true },
+	_read_interval { read_interval },
+	_write_interval { write_interval },
 	_stats {
 		{ "command_packets_received", 0 },
 		{ "command_packets_lost", 0 },
@@ -213,7 +221,7 @@ void Gateway::_read() noexcept
 		} catch (const SocketReadError & error) {
 			std::cerr << error.what() << std::endl;
 		}
-		std::this_thread::sleep_for(WAIT_TIME_MS);
+		std::this_thread::sleep_for(std::chrono::milliseconds(_read_interval));
 		if (!this->is_connected()) {
 			this->_reconnect();
 		}
@@ -244,7 +252,7 @@ void Gateway::_write() noexcept
 		} catch (const SocketWriteError & error) {
 			std::cerr << error.what() << std::endl;
 		}
-		std::this_thread::sleep_for(WAIT_TIME_MS);
+		std::this_thread::sleep_for(std::chrono::milliseconds(_write_interval));
 		if (!this->is_connected()) {
 			this->_reconnect();
 		}

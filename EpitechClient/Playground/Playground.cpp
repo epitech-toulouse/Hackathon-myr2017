@@ -3,11 +3,12 @@
 
 namespace Playground
 {
-  Playground::Playground(const std::string & host, const std::string & main_port, const std::string & camera_port) :
+  Playground::Playground(int argc, char ** argv) :
+    args { arg_parse(argc, argv) },
     system { },
-    gateway { host, main_port, camera_port },
+    gateway { args.host, args.main_port, args.camera_port, args.read_interval, args.write_interval },
     oz { this->gateway },
-    display { this->system, this->gateway }
+    display { this->system, this->gateway, this->oz }
   {
     /* Launch playground */
     try {
@@ -17,42 +18,33 @@ namespace Playground
     }
   }
 
-  static void get_lidar_info(Display::Display & display, Gateway::Gateway & gateway)
+  int Playground::run()
   {
-    std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> dist;
-    int i = 0;
-    while (gateway.is_running()) {
-      std::shared_ptr<HaLidarPacket> halidarpacket = gateway.get<HaLidarPacket>();
-      if (halidarpacket != nullptr) {
-        for (auto & value : dist) {
-          value = static_cast<uint16_t>(halidarpacket->distance[i]);
-          i = i + 1;
-        }
-        display.update_lidar(dist);
-        i = 0;
-        std::this_thread::sleep_for(WAIT_TIME_MS);
-      }
-    }
-  }
-
-  int Playground::run() {
-    this->display.set_target_camera(&(this->oz.getCamera()));
     this->gateway.start();
-    this->oz.getCamera().start();
-    while (!this->oz.getCamera().is_running() || !this->gateway.is_running()) {
+    while (!this->gateway.is_running()) {
       std::this_thread::sleep_for(WAIT_TIME_MS);
     }
     using Command = ApiCommandPacket::CommandType;
-    this->gateway.enqueue(std::make_unique<ApiCommandPacket>(Command::TURN_OFF_IMAGE_ZLIB_COMPRESSION));
-    this->gateway.enqueue(std::make_unique<ApiCommandPacket>(Command::TURN_ON_API_RAW_STEREO_CAMERA_PACKET));
-    std::thread get_lidar_info_thread = std::thread(get_lidar_info, std::ref(display), std::ref(gateway));
+    this->gateway.emplace<ApiCommandPacket>(Command::TURN_OFF_IMAGE_ZLIB_COMPRESSION);
+    this->gateway.emplace<ApiCommandPacket>(Command::TURN_ON_API_RAW_STEREO_CAMERA_PACKET);
+    auto update_thread = _update_thread();
     this->display.show();
-    this->oz.getCamera().stop();
     this->gateway.stop();
-    get_lidar_info_thread.join();
+    update_thread.join();
     return 0;
   }
   
+  std::thread Playground::_update_thread()
+  {
+    return std::thread([this](){
+      while (this->gateway.is_running()) {
+	for (Oz::Unit & unit : this->oz) {
+	  unit.update();
+	}
+	std::this_thread::sleep_for(std::chrono::milliseconds(args.read_interval));
+      }
+    });
+  }
 
   Oz::Oz& Playground::getOz(void)
   {

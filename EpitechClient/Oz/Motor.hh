@@ -1,11 +1,14 @@
+#pragma once
+#include "Oz/Unit.hh"
+
 namespace Oz
 {
-  class Motor
+  class Motor : public Unit
   {
   private:
 
   public:
     explicit Motor(void);
-    ~Motor() {}
+    void update() override;
   };
 }

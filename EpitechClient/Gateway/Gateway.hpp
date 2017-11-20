@@ -4,9 +4,15 @@ namespace Gateway
 {
 
 template<typename T>
-void Gateway::enqueue(std::unique_ptr<T> packet)
+void Gateway::enqueue(std::unique_ptr<T>&& packet)
 {
-	_packet_queue.push(std::move(packet));
+	_packet_queue.push(std::forward<std::unique_ptr<T>&&>(packet));
+}
+
+template<typename T, typename... Args>
+void Gateway::emplace(Args&&... args)
+{
+	_packet_queue.push(std::make_unique<T>(std::forward<Args>(args)...));
 }
 
 template<typename T>

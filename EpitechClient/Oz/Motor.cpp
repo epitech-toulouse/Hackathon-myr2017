@@ -8,4 +8,8 @@ namespace Oz {
     std::cout << "Motor initialisation" << std::endl;
   }
 
+  void Motor::update()
+  {
+  }
+
 }

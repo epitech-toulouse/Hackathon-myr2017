@@ -10,6 +10,7 @@
 #include "Gateway/Gateway.hh"
 #include "Oz/Oz.hh"
 #include "System.hh"
+#include "Arguments.hh"
 
 namespace Playground
 {
@@ -17,15 +18,17 @@ namespace Playground
   class Playground
   {
   private:
+    Arguments args;
     System system;
     Gateway::Gateway gateway;
     Oz::Oz oz;
     Display::Display display;
 
     int run(void);
+    std::thread _update_thread();
 
   public:
-    explicit Playground(const std::string &, const std::string &, const std::string &);
+    explicit Playground(int argc, char ** argv);
     ~Playground() {};
 
     Oz::Oz & getOz(void);

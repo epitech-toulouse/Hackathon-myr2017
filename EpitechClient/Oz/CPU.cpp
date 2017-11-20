@@ -7,4 +7,8 @@ namespace Oz {
   {
     std::cout << "CPU initialisation" << std::endl;
   }
+
+  void CPU::update()
+  {
+  }
 }

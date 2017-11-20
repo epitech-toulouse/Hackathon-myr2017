@@ -33,7 +33,12 @@ public:
 	typedef std::map<std::string, unsigned long> Stats;
 
 public:
-	explicit Gateway(const std::string & host, const std::string & main_port, const std::string & camera_port);
+	explicit Gateway(
+		const std::string & host,
+		const std::string & main_port,
+		const std::string & camera_port,
+		unsigned read_interval,
+		unsigned write_interval);
 	~Gateway();
 	bool is_running() const noexcept;
 	bool is_connected() const noexcept;
@@ -43,7 +48,8 @@ public:
 	void stop();
 	void enable_camera(bool) noexcept;
 	const Stats & get_stats() const noexcept;
-	template<typename T> void enqueue(std::unique_ptr<T> packet);
+	template<typename T> void enqueue(std::unique_ptr<T>&& packet);
+	template<typename T, typename... Args> void emplace(Args&&... args);
 	template<typename T> inline std::shared_ptr<T> get() const noexcept;
 
 private:
@@ -75,6 +81,8 @@ private:
 	bool _enable_camera;
 	std::mutex _connect_mutex;
 	std::condition_variable _connect_condv;
+	unsigned _read_interval;
+	unsigned _write_interval;
 	Stats _stats;
 };
 
