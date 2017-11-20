@@ -55,9 +55,6 @@ bool Socket::is_connected() const noexcept
 
 void Socket::connect()
 {
-	if (_connected) {
-		this->disconnect();
-	}
 	struct addrinfo hints;
 	struct addrinfo * results = nullptr;
 	std::memset(&hints, 0, sizeof(hints));
@@ -90,6 +87,7 @@ void Socket::connect()
 	}
 	_connected = true;
 	_options = ::fcntl(_fd, F_GETFL);
+	_nonblock_option = !!(_options & O_NONBLOCK);
 }
 
 void Socket::disconnect() noexcept
@@ -98,15 +96,14 @@ void Socket::disconnect() noexcept
 	if (0 > ::shutdown(_fd, SHUT_RDWR)) {
 		std::cerr << "warning: shutdown<" << std::string(this->get_authority()) << ">: "
 			<< strerror(errno) << std::endl;
-		this->force_close();
 	}
+	this->force_close();
 	_fd = -1;
 }
 
 void Socket::force_close() noexcept
 {
 	_connected = false;
-	std::cerr << "warning: Force close attempted on socket connected to " << std::string(this->get_authority()) << std::endl;
 	if (0 > ::close(_fd)) {
 		std::cerr << "warning: close<" << std::string(this->get_authority()) << ">: " << strerror(errno) << std::endl;
 	}
@@ -115,33 +112,37 @@ void Socket::force_close() noexcept
 // NOTE: To read a fixed-size of bytes, just recv(2) in blocking-mode.
 void Socket::read(std::basic_string<uint8_t> & response)
 {
+	std::lock_guard<std::mutex> lock (_lock);
+	if (!_connected) {
+		throw SocketReadError(this, "recv", "Not connected");
+	}
 	size_t received = 0;
 	if (_nonblock_option) {
 		this->_nonblock(false);
 	}
 	received = this->_buffer_recv();
 	response.append(std::basic_string<uint8_t>(_buffer.data(), received));
-	{
-		std::lock_guard<std::mutex> lock (_lock);
-		this->_nonblock(true);
-		while (received > 0) {
-			try {
-				received = this->_buffer_recv();
-			} catch (const SocketReadError & error) {
-				std::cerr << error.what() << std::endl;
-				break;
-			}
-			if (received > 0) {
-				response.append(std::basic_string<uint8_t>(_buffer.data(), received));
-			}
+	this->_nonblock(true);
+	while (received > 0) {
+		try {
+			received = this->_buffer_recv();
+		} catch (const SocketReadError & error) {
+			std::cerr << error.what() << std::endl;
+			break;
 		}
-		this->_nonblock(false);
+		if (received > 0) {
+			response.append(std::basic_string<uint8_t>(_buffer.data(), received));
+		}
 	}
+	this->_nonblock(false);
 }
 
 void Socket::write(const std::basic_string<uint8_t> & request)
 {
 	std::lock_guard<std::mutex> lock (_lock);
+	if (!_connected) {
+		throw SocketWriteError(this, "send", "Not connected");
+	}
 	if (_nonblock_option) {
 		this->_nonblock(false);
 	}
@@ -150,7 +151,6 @@ void Socket::write(const std::basic_string<uint8_t> & request)
 			throw std::bad_alloc();
 		}
 		if (errno == EPIPE || errno == ECONNRESET || errno == EBADF) {
-			this->force_close();
 			throw SocketPeerResetError(this, "send", strerror(errno));
 		}
 		throw SocketWriteError(this, "send", strerror(errno));
@@ -165,7 +165,6 @@ size_t Socket::_buffer_recv()
 		throw std::bad_alloc();
 	}
 	if (received == 0 || errno == ECONNRESET || errno == EBADF) {
-		this->force_close();
 		throw SocketPeerResetError(this, "recv", strerror(errno));
 	}
 	if (received < 0) {

@@ -14,17 +14,20 @@ class RenderLidar : public sf::Drawable, public sf::Transformable
 public:
 	explicit RenderLidar(void);
 	void update(const std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> & distances);
+	void toggle_rays();
 
 private:
-	void draw(sf::RenderTarget& target, sf::RenderStates states) const;
+	void draw(sf::RenderTarget & target, sf::RenderStates states) const;
 
 private:
 	sf::Color _background_color;
 	sf::Color _grid_lines_color;
 	sf::VertexArray _vertices;
+	sf::VertexArray _ray_lines;
 	sf::VertexArray _background;
 	sf::VertexArray _angle_grid_lines;
 	std::array<sf::CircleShape, 10> _radius_grid_lines;
+	bool _enable_rays;
 };
 
 }

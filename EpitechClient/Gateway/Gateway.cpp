@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <vitals/CLBuffer.hpp>
+#include <ApiCodec/ApiStereoCameraPacket.hpp>
 #include <ApiCodec/ApiWatchdogPacket.hpp>
 #include <ApiCodec/BaseNaio01Packet.hpp>
 #include <ApiCodec/Naio01Codec.hpp>
@@ -14,14 +15,34 @@
 #include "constants.hh"
 #include "exceptions.hh"
 
+using std::dynamic_pointer_cast;
+
 namespace Gateway
 {
 
-Gateway::Gateway(const std::string & host, const std::string & main_port, const std::string & camera_port) :
+Gateway::Gateway(
+	const std::string & host,
+	const std::string & main_port,
+	const std::string & camera_port,
+	unsigned read_interval,
+	unsigned write_interval
+) :
 	_running { false },
-	_main_socket { host, main_port },
-	_camera_socket { host, camera_port, 65536 },
-	_enable_camera { true }
+	_main_socket { host, main_port, 16384 },
+	_camera_socket { host, camera_port, 1048576 },
+	_enable_camera { true },
+	_read_interval { read_interval },
+	_write_interval { write_interval },
+	_stats {
+		{ "command_packets_received", 0 },
+		{ "command_packets_lost", 0 },
+		{ "command_packets_bad", 0 },
+		{ "camera_packets_received", 0 },
+		{ "camera_packets_lost", 0 },
+		{ "camera_packets_bad", 0 },
+		{ "command_packets_transmitted", 0 },
+		{ "camera_packets_transmitted", 0 }
+	}
 {
 }
 
@@ -40,6 +61,16 @@ bool Gateway::is_connected() const noexcept
 	return _main_socket.is_connected() && (!_enable_camera || _camera_socket.is_connected());
 }
 
+bool Gateway::is_command_connected() const noexcept
+{
+	return _main_socket.is_connected();
+}
+
+bool Gateway::is_camera_connected() const noexcept
+{
+	return _camera_socket.is_connected();
+}
+
 void Gateway::start()
 {
 	if (!_running) {
@@ -53,6 +84,7 @@ void Gateway::stop()
 {
 	if (_running.load()) {
 		_running.store(false);
+		_connect_condv.notify_all();
 		_read_thr.join();
 		_write_thr.join();
 		this->_disconnect();
@@ -64,41 +96,79 @@ void Gateway::enable_camera(bool enable) noexcept
 	_enable_camera = enable;
 }
 
-void Gateway::enqueue(std::unique_ptr<BaseNaio01Packet> && packet)
+const Gateway::Stats & Gateway::get_stats() const noexcept
 {
-	_packet_queue.push(std::move(packet));
+	return _stats;
 }
 
 void Gateway::_connect() noexcept
 {
-	std::lock_guard<std::mutex> guard(_connect_mutex);
-	this->_await_connect(_main_socket);
-	if (_enable_camera) {
-		this->_await_connect(_camera_socket);
+	if (_connect_mutex.try_lock()) {
+		this->_await_connect(_main_socket);
+		if (_enable_camera) {
+			this->_await_connect(_camera_socket);
+		}
+	} else {
+		while (!_connect_mutex.try_lock()) {
+			std::mutex cvw_mutex;
+			std::unique_lock<std::mutex> cvw_lock(cvw_mutex);
+			auto now = std::chrono::system_clock::now();
+			if (_connect_condv.wait_until(cvw_lock, now + SOCKET_RECONNECT_DELAY) == std::cv_status::no_timeout) {
+				_connect_mutex.unlock();
+				return;
+			}
+		}
 	}
+	_connect_mutex.unlock();
 }
 
 void Gateway::_disconnect() noexcept
 {
-	std::lock_guard<std::mutex> guard(_connect_mutex);
-	this->_ensure_disconnect(_main_socket);
-	this->_ensure_disconnect(_camera_socket);
+	if (_connect_mutex.try_lock()) {
+		this->_ensure_disconnect(_main_socket);
+		this->_ensure_disconnect(_camera_socket);
+		std::this_thread::sleep_for(SOCKET_RECONNECT_DELAY);
+	} else {
+		while (!_connect_mutex.try_lock()) {
+			std::mutex cvw_mutex;
+			std::unique_lock<std::mutex> cvw_lock(cvw_mutex);
+			auto now = std::chrono::system_clock::now();
+			if (_connect_condv.wait_until(cvw_lock, now + SOCKET_RECONNECT_DELAY) == std::cv_status::no_timeout) {
+				_connect_mutex.unlock();
+				return;
+			}
+		}
+	}
+	_connect_mutex.unlock();
 }
 
 void Gateway::_reconnect() noexcept
 {
-	std::lock_guard<std::mutex> guard(_connect_mutex);
-	this->_ensure_disconnect(_main_socket);
-	this->_ensure_disconnect(_camera_socket);
-	this->_await_connect(_main_socket);
-	if (_enable_camera) {
-		this->_await_connect(_camera_socket);
+	if (_connect_mutex.try_lock()) {
+		this->_ensure_disconnect(_main_socket);
+		this->_ensure_disconnect(_camera_socket);
+		std::this_thread::sleep_for(SOCKET_RECONNECT_DELAY);
+		this->_await_connect(_main_socket);
+		if (_enable_camera) {
+			this->_await_connect(_camera_socket);
+		}
+	} else {
+		while (!_connect_mutex.try_lock()) {
+			std::mutex cvw_mutex;
+			std::unique_lock<std::mutex> cvw_lock(cvw_mutex);
+			auto now = std::chrono::system_clock::now();
+			if (_connect_condv.wait_until(cvw_lock, now + SOCKET_RECONNECT_DELAY) == std::cv_status::no_timeout) {
+				_connect_mutex.unlock();
+				return;
+			}
+		}
 	}
+	_connect_mutex.unlock();
 }
 
 void Gateway::_await_connect(Socket & sock) noexcept
 {
-	if (sock.is_connected()) {
+	if (!_running || sock.is_connected()) {
 		return;
 	}
 	std::clog << "Connecting to " << sock.get_host() << ":" << sock.get_port() << "... " << std::flush;
@@ -107,7 +177,12 @@ void Gateway::_await_connect(Socket & sock) noexcept
 			sock.connect();
 		} catch (const SocketConnectError & error) {
 			std::clog << "FAILED! (" << error.what() << ")" << std::endl;
-			std::this_thread::sleep_for(SOCKET_RECONNECT_DELAY);
+			std::mutex cvw_mutex;
+			std::unique_lock<std::mutex> cvw_lock(cvw_mutex);
+			auto now = std::chrono::system_clock::now();
+			if (_connect_condv.wait_until(cvw_lock, now + SOCKET_RECONNECT_DELAY) == std::cv_status::no_timeout) {
+				return;
+			}
 			std::clog << "Reconnecting now... " << std::flush;
 		}
 		if (!_running) {
@@ -133,20 +208,23 @@ void Gateway::_read() noexcept
 	while (_running) {
 		try {
 			_main_socket.read(response);
-			this->_decode_packets(codec, response);
+			this->_decode_packets(codec, response, "command");
 			response.clear();
 			if (_enable_camera) {
 				_camera_socket.read(response);
-				this->_decode_packets(codec, response);
+				this->_decode_packets(codec, response, "camera");
 				response.clear();
 			}
 		} catch (const SocketPeerResetError & error) {
 			std::cerr << error.what() << std::endl;
-			this->_reconnect();
+			this->_disconnect();
 		} catch (const SocketReadError & error) {
 			std::cerr << error.what() << std::endl;
 		}
-		std::this_thread::sleep_for(WAIT_TIME_MS);
+		std::this_thread::sleep_for(std::chrono::milliseconds(_read_interval));
+		if (!this->is_connected()) {
+			this->_reconnect();
+		}
 	}
 }
 
@@ -160,43 +238,50 @@ void Gateway::_write() noexcept
 				_packet_queue.pop();
 				std::unique_ptr<cl_copy::Buffer> buffer (packet->encode());
 				_main_socket.write({buffer->data(), buffer->size()});
+				_stats["command_packets_transmitted"] += 1;
 			}
 			if (_enable_camera) {
 				ApiWatchdogPacket packet(0xFEU);
 				std::unique_ptr<cl_copy::Buffer> buffer (packet.encode());
 				_camera_socket.write({buffer->data(), buffer->size()});
+				_stats["camera_packets_transmitted"] += 1;
 			}
 		} catch (const SocketPeerResetError & error) {
 			std::cerr << error.what() << std::endl;
-			this->_reconnect();
+			this->_disconnect();
 		} catch (const SocketWriteError & error) {
 			std::cerr << error.what() << std::endl;
 		}
-		std::this_thread::sleep_for(WAIT_TIME_MS);
+		std::this_thread::sleep_for(std::chrono::milliseconds(_write_interval));
+		if (!this->is_connected()) {
+			this->_reconnect();
+		}
 	}
 }
 
-void Gateway::_decode_packets(Naio01Codec & codec, std::basic_string<uint8_t> & response)
+void Gateway::_decode_packets(Naio01Codec & codec, std::basic_string<uint8_t> & response, const std::string & name)
 {
 	bool has_header_packet = false;
 	if (codec.decode(const_cast<uint8_t*>(response.data()), static_cast<unsigned>(response.size()), has_header_packet)) {
-		if (has_header_packet) {
-			for (auto && base_packet : codec.currentBasePacketList) {
-				this->_set(std::move(base_packet));
-			}
-		} else {
-			std::cerr << "warning: Header packet not detected, dismissing data received." << std::endl;
+		_stats[name + "_packets_received"] += codec.currentBasePacketList.size();
+		if (!has_header_packet) {
+			_stats[name + "_packets_lost"] += codec.currentBasePacketList.size();
+			/* std::cerr << "warning: Header packet not detected, dismissing data received." << std::endl; */
+		}
+		for (auto && base_packet : codec.currentBasePacketList) {
+			this->_set(base_packet);
 		}
 		codec.currentBasePacketList.clear();
 	} else {
-		std::cerr << "warning: Could not decode some packets." << std::endl;
+		_stats[name + "_packets_bad"] += 1;
+		/* std::cerr << "warning: Could not decode some packets." << std::endl; */
 	}
 }
 
 
-void Gateway::_set(std::shared_ptr<BaseNaio01Packet> && packet) noexcept
+void Gateway::_set(std::shared_ptr<BaseNaio01Packet> packet) noexcept
 {
-	_last_packets.emplace(std::type_index(typeid(*packet)), packet);
+	_last_packets[std::type_index(typeid(*packet))] = packet;
 }
 
 }

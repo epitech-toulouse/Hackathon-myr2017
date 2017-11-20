@@ -1,6 +1,9 @@
 #include <cstdint>
 #include <stdexcept>
 #include <zlib.h>
+#include <unistd.h>
+#include <climits>
+#include <cstring>
 #include "utilities.hh"
 
 /*
@@ -44,4 +47,22 @@ void bayer_grbg32_to_rgba24(uint8_t * dst, const uint8_t * src, size_t xres, siz
 			dst[di + 3] = 255;
 		}
 	}
+}
+
+std::string getexe(void)
+{
+	char buffer[PATH_MAX];
+	ssize_t len = readlink("/proc/self/exe", buffer, PATH_MAX);
+	if (0 < len) {
+		buffer[len] = 0;
+		*strrchr(buffer, '/') = 0;
+		return std::string(buffer);
+	} else {
+		return "";
+	}
+}
+
+bool is_sf_image_empty(const sf::Image & image)
+{
+	return image.getSize() == sf::Vector2u();
 }

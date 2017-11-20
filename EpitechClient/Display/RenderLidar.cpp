@@ -8,8 +8,10 @@ RenderLidar::RenderLidar(void) :
 	_background_color { 0x0F0100FF },
 	_grid_lines_color { 0x440B05FF },
 	_vertices { sf::Points, LIDAR_CAPTURE_RESOLUTION },
+	_ray_lines { sf::Lines, LIDAR_CAPTURE_RESOLUTION * 2 },
 	_background { sf::Triangles, 6 },
-	_angle_grid_lines { sf::Lines, 28 * 2 }
+	_angle_grid_lines { sf::Lines, 28 * 2 },
+	_enable_rays { true }
 {
 	/* Background */
 	float half = 1000.0f; /* Background half size */
@@ -49,12 +51,21 @@ RenderLidar::RenderLidar(void) :
 void RenderLidar::update(const std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> & distances)
 {
 	for (size_t angle = 0 ; angle < distances.size() ; ++angle) {
-		double dist = distances[angle];
+		double dist = distances[angle] / 10.0;
 		double x = dist * cos((static_cast<double>(angle) + LIDAR_BEGIN_ANGLE) * M_PI / 180.0);
 		double y = dist * sin((static_cast<double>(angle) + LIDAR_BEGIN_ANGLE) * M_PI / 180.0);
 		_vertices[angle].position = sf::Vector2f(static_cast<float>(x), static_cast<float>(y));
 		_vertices[angle].color = sf::Color(0xFFFFFFFF);
+		_ray_lines[angle * 2].position = sf::Vector2f(static_cast<float>(x), static_cast<float>(y));
+		_ray_lines[angle * 2].color = sf::Color(0x004411FF);
+		_ray_lines[angle * 2 + 1].position = sf::Vector2f();
+		_ray_lines[angle * 2 + 1].color = sf::Color(0x004411FF);
 	}
+}
+
+void RenderLidar::toggle_rays()
+{
+	_enable_rays = !_enable_rays;
 }
 
 void RenderLidar::draw(sf::RenderTarget& target, sf::RenderStates states) const
@@ -65,6 +76,9 @@ void RenderLidar::draw(sf::RenderTarget& target, sf::RenderStates states) const
 	target.draw(_angle_grid_lines, states);
 	for (auto && line : _radius_grid_lines) {
 		target.draw(line, states);
+	}
+	if (_enable_rays) {
+		target.draw(_ray_lines, states);
 	}
 	target.draw(_vertices, states);
 }

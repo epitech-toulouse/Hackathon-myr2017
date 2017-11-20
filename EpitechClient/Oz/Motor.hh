@@ -5,13 +5,13 @@
 #include <thread>
 #include <ApiCodec/ApiMotorsPacket.hpp>
 #include "Gateway/Gateway.hh"
+#include "Oz/Unit.hh"
 
 namespace Oz {
 
-class Motor{
+class Motor : public Unit {
 private:
 	Gateway::Gateway & _gateway;
-	std::atomic<bool> _running;
 	std::atomic<int8_t> _speed;
 	std::atomic<int8_t> _angleSpeed;
 	std::atomic<int8_t> _angle;
@@ -20,9 +20,7 @@ public:
 	explicit Motor(Gateway::Gateway & gateway);
 	~Motor();
 
-	void start();
-	void stop();
-	void threadHandler();
+	void update() override;
 
 	void setSpeed(int8_t speed);
 	void setAngle(int8_t angle);

@@ -1,85 +1,294 @@
 #include <iostream>
+#include <sstream>
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 #include "Display/Display.hh"
+#include "Playground/Playground.hh"
 #include "constants.hh"
 
 namespace Display
 {
 
-static const size_t INNER_GAP = 3;
+static const size_t OUTER_GAP = 10;
+static const size_t INNER_GAP = 10;
+static const size_t LINE_HEIGHT = 16;
+static const size_t LIDAR_TV_X = OUTER_GAP;
+static const size_t LIDAR_TV_Y = OUTER_GAP + INNER_GAP + LINE_HEIGHT * 2 + CAMERA_CAPTURE_HEIGHT;
 static const size_t LIDAR_TV_WIDTH = CAMERA_CAPTURE_WIDTH * 2 + INNER_GAP;
 static const size_t LIDAR_TV_HEIGHT = LIDAR_TV_WIDTH * 0.6;
-static const size_t VIDEO_WIDTH = LIDAR_TV_WIDTH;
-static const size_t VIDEO_HEIGHT = LIDAR_TV_HEIGHT + CAMERA_CAPTURE_HEIGHT + INNER_GAP;
+static const size_t VIDEO_WIDTH = LIDAR_TV_WIDTH + OUTER_GAP * 2;
+static const size_t VIDEO_HEIGHT = LIDAR_TV_HEIGHT + CAMERA_CAPTURE_HEIGHT + INNER_GAP + OUTER_GAP * 2 + LINE_HEIGHT * 2;
+static const size_t CAMERA_LEFT_X = OUTER_GAP;
+static const size_t CAMERA_LEFT_Y = OUTER_GAP + LINE_HEIGHT;
+static const size_t CAMERA_RIGHT_X = OUTER_GAP + CAMERA_CAPTURE_WIDTH + INNER_GAP;
+static const size_t CAMERA_RIGHT_Y = OUTER_GAP + LINE_HEIGHT;
+static const size_t CAMERA_DISABLED_IMAGE_LEN = 100;
+static const size_t CAMERA_DISABLED_X = (CAMERA_CAPTURE_WIDTH - CAMERA_DISABLED_IMAGE_LEN) / 2;
+static const size_t CAMERA_DISABLED_Y = (CAMERA_CAPTURE_HEIGHT - CAMERA_DISABLED_IMAGE_LEN) / 2;
+static const sf::Color BORDER_COLOR = sf::Color(0x34498EFF);
 
-Display::Display(void) :
+Display::Display(const Playground::System & sys, const Gateway::Gateway & gateway, const Oz::Oz & oz) :
+	_system { sys },
+	_gateway { gateway },
+	_oz { oz },
 	_window_title { "Naio Move your Robot 2017 :: Epitech's API Client" },
 	_window_mode { VIDEO_WIDTH, VIDEO_HEIGHT },
-	_window_framerate { 60 },
-	_left_buffer { nullptr },
-	_right_buffer { nullptr },
-	_camera { nullptr },
-	_lidar { nullptr }
+	_window_framerate { 60 }
 {
-}
-
-void Display::set_target_camera(Oz::Camera * camera) noexcept
-{
-	_camera = camera;
-	if (_camera != nullptr) {
-		_camera->share_screen_buffers(&_left_buffer, &_right_buffer);
-	}
-}
-
-void Display::update_lidar(const std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> & distances)
-{
-	if (_lidar) {
-		_lidar->update(distances);
-	}
 }
 
 void Display::show() noexcept
 {
+	std::unique_ptr<sf::RenderWindow> window = _build_window();
+	std::unique_ptr<Context> ctx = _build_context();
+	while (window->isOpen()) {
+		sf::Event event;
+		while (window->pollEvent(event)) {
+			_on_event(event, *window, *ctx);
+		}
+		_update_camera(*ctx);
+		_update_lidar(*ctx);
+		_update_debug_text(*ctx);
+		window->clear();
+		_draw(*window, *ctx);
+		window->display();
+	}
+}
+
+std::unique_ptr<sf::RenderWindow> Display::_build_window() const
+{
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 1;
-	sf::RenderWindow window(_window_mode, _window_title, sf::Style::Default, settings);
-	window.setVerticalSyncEnabled(false);
-	window.setFramerateLimit(_window_framerate);
+	auto w = std::make_unique<sf::RenderWindow>(_window_mode, _window_title, sf::Style::Default, settings);
+	w->setVerticalSyncEnabled(false);
+	w->setFramerateLimit(_window_framerate);
+	return w;
+}
 
-	sf::Texture left_texture, right_texture;
-	left_texture.create(CAMERA_CAPTURE_WIDTH, CAMERA_CAPTURE_HEIGHT);
-	right_texture.create(CAMERA_CAPTURE_WIDTH, CAMERA_CAPTURE_HEIGHT);
-	sf::Sprite left_sprite(left_texture);
-	sf::Sprite right_sprite(right_texture);
-	right_sprite.setPosition(CAMERA_CAPTURE_WIDTH + INNER_GAP, 0);
+std::unique_ptr<Context> Display::_build_context() const
+{
+	auto ctx = std::make_unique<Context>();
 
-	sf::View lidar_view(sf::FloatRect(0, 0, LIDAR_TV_WIDTH, LIDAR_TV_HEIGHT));
-	_lidar = std::make_unique<RenderLidar>();
-	lidar_view.setCenter(sf::Vector2f(0, LIDAR_TV_HEIGHT / 2 - LIDAR_TV_HEIGHT / 10));
-	lidar_view.setSize(sf::Vector2f(LIDAR_TV_WIDTH, LIDAR_TV_HEIGHT));
-	lidar_view.setViewport(sf::FloatRect(
-		0,
-		static_cast<float>(CAMERA_CAPTURE_HEIGHT + INNER_GAP) / static_cast<float>(VIDEO_HEIGHT),
-		static_cast<float>(LIDAR_TV_WIDTH) / static_cast<float>(VIDEO_WIDTH),
-		static_cast<float>(LIDAR_TV_HEIGHT) / static_cast<float>(VIDEO_HEIGHT)
+	/* Options */
+	ctx->enable_debug_text = true;
+
+	/* Font */
+	ctx->monospace_font.loadFromFile(_system.queryAssetPath("iosevka-term-custom-regular.ttf"));
+
+	/* Camera left */
+	ctx->left_camera_texture.create(CAMERA_CAPTURE_WIDTH, CAMERA_CAPTURE_HEIGHT);
+	ctx->left_camera_sprite.setTexture(ctx->left_camera_texture);
+	ctx->left_camera_sprite.setPosition(CAMERA_LEFT_X, CAMERA_LEFT_Y);
+
+	ctx->border_camera_left.setSize({CAMERA_CAPTURE_WIDTH, CAMERA_CAPTURE_HEIGHT});
+	ctx->border_camera_left.setPosition(CAMERA_LEFT_X, CAMERA_LEFT_Y);
+	ctx->border_camera_left.setOutlineThickness(1.0f);
+	ctx->border_camera_left.setOutlineColor(BORDER_COLOR);
+	ctx->border_camera_left.setFillColor(sf::Color(0x0));
+
+	ctx->title_camera_left_text.setCharacterSize(10);
+	ctx->title_camera_left_text.setFont(ctx->monospace_font);
+	ctx->title_camera_left_text.setFillColor(sf::Color::White);
+	ctx->title_camera_left_text.setString("Left camera");
+	ctx->title_camera_left_text.setPosition(CAMERA_LEFT_X + 3, CAMERA_LEFT_Y - LINE_HEIGHT + 2);
+
+	ctx->title_border_camera_left.setPosition(CAMERA_LEFT_X - 1, CAMERA_LEFT_Y - LINE_HEIGHT);
+	ctx->title_border_camera_left.setSize({ctx->title_camera_left_text.getGlobalBounds().width + 10, LINE_HEIGHT});
+	ctx->title_border_camera_left.setFillColor(BORDER_COLOR);
+
+	/* Camera right */
+	ctx->right_camera_texture.create(CAMERA_CAPTURE_WIDTH, CAMERA_CAPTURE_HEIGHT);
+	ctx->right_camera_sprite.setTexture(ctx->right_camera_texture);
+	ctx->right_camera_sprite.setPosition(CAMERA_RIGHT_X, CAMERA_RIGHT_Y);
+
+	ctx->border_camera_right.setSize({CAMERA_CAPTURE_WIDTH, CAMERA_CAPTURE_HEIGHT});
+	ctx->border_camera_right.setPosition(CAMERA_RIGHT_X, CAMERA_RIGHT_Y);
+	ctx->border_camera_right.setOutlineThickness(1.0f);
+	ctx->border_camera_right.setOutlineColor(BORDER_COLOR);
+	ctx->border_camera_right.setFillColor(sf::Color(0x0));
+
+	ctx->title_camera_right_text.setCharacterSize(10);
+	ctx->title_camera_right_text.setFont(ctx->monospace_font);
+	ctx->title_camera_right_text.setFillColor(sf::Color::White);
+	ctx->title_camera_right_text.setString("Right camera");
+	ctx->title_camera_right_text.setPosition(CAMERA_RIGHT_X + 3, CAMERA_RIGHT_Y - LINE_HEIGHT + 2);
+
+	ctx->title_border_camera_right.setPosition(CAMERA_RIGHT_X - 1, CAMERA_RIGHT_Y - LINE_HEIGHT);
+	ctx->title_border_camera_right.setSize({ctx->title_camera_right_text.getGlobalBounds().width + 10, LINE_HEIGHT});
+	ctx->title_border_camera_right.setFillColor(BORDER_COLOR);
+
+	/* Camera no render sprite */
+	ctx->camera_disabled_sprite.loadFromFile(_system.queryAssetPath("camera_disabled.png"));
+
+	/* Text */
+	ctx->debug_text.setFont(ctx->monospace_font);
+	ctx->debug_text.setCharacterSize(10);
+	ctx->debug_text.setFillColor(sf::Color::Yellow);
+	ctx->debug_text.setOutlineColor(sf::Color::Black);
+	ctx->debug_text.setOutlineThickness(1.0);
+	ctx->debug_text.setPosition(LIDAR_TV_X + INNER_GAP, LIDAR_TV_Y + INNER_GAP);
+
+	/* Lidar */
+	ctx->lidar_view.setCenter(0, LIDAR_TV_HEIGHT / 2 - LIDAR_TV_HEIGHT / 10);
+	ctx->lidar_view.setSize(LIDAR_TV_WIDTH, LIDAR_TV_HEIGHT);
+	ctx->lidar_view.setViewport(sf::FloatRect(
+		float(LIDAR_TV_X) / float(VIDEO_WIDTH),
+		float(LIDAR_TV_Y) / float(VIDEO_HEIGHT),
+		float(LIDAR_TV_WIDTH) / float(VIDEO_WIDTH),
+		float(LIDAR_TV_HEIGHT) / float(VIDEO_HEIGHT)
 	));
 
-	while (window.isOpen()) {
-		sf::Event event;
-		while (window.pollEvent(event)) {
-			if (event.type == sf::Event::Closed)
-				window.close();
+	ctx->border_lidar.setSize({LIDAR_TV_WIDTH, LIDAR_TV_HEIGHT});
+	ctx->border_lidar.setPosition(LIDAR_TV_X, LIDAR_TV_Y);
+	ctx->border_lidar.setOutlineThickness(1.0f);
+	ctx->border_lidar.setOutlineColor(BORDER_COLOR);
+	ctx->border_lidar.setFillColor(sf::Color(0x0));
+
+	ctx->title_lidar_text.setCharacterSize(10);
+	ctx->title_lidar_text.setFont(ctx->monospace_font);
+	ctx->title_lidar_text.setFillColor(sf::Color::White);
+	ctx->title_lidar_text.setString("Lidar (Top-View)");
+	ctx->title_lidar_text.setPosition(LIDAR_TV_X + 3, LIDAR_TV_Y - LINE_HEIGHT + 2);
+
+	ctx->title_border_lidar.setPosition(LIDAR_TV_X - 1, LIDAR_TV_Y - LINE_HEIGHT);
+	ctx->title_border_lidar.setSize({ctx->title_lidar_text.getGlobalBounds().width + 10, LINE_HEIGHT});
+	ctx->title_border_lidar.setFillColor(BORDER_COLOR);
+
+	return ctx;
+}
+
+void Display::_on_event(const sf::Event & event, sf::RenderWindow & window, Context & ctx)
+{
+	static bool mouse_drag = false;
+	static sf::Vector2f mouse_drag_start;
+	static float zoom = 1.0f;
+
+	switch (event.type) {
+	case sf::Event::Closed:
+		window.close();
+		break;
+	case sf::Event::MouseButtonPressed:
+		if (event.mouseButton.button == 0) {
+			mouse_drag = true;
+			mouse_drag_start = window.mapPixelToCoords(
+				{ event.mouseButton.x, event.mouseButton.y }
+			);
 		}
-		left_texture.update(_left_buffer);
-		right_texture.update(_right_buffer);
-		window.clear();
-		window.draw(left_sprite);
-		window.draw(right_sprite);
-		window.setView(lidar_view);
-		window.draw(*_lidar);
-		window.setView(window.getDefaultView());
-		window.display();
+		break;
+	case  sf::Event::MouseButtonReleased:
+		if (event.mouseButton.button == 0) {
+			mouse_drag = false;
+		}
+		break;
+	case sf::Event::MouseMoved: {
+		if (!mouse_drag) {
+			break;
+		}
+		const sf::Vector2f mouse_drag_end = window.mapPixelToCoords(
+			{ event.mouseMove.x, event.mouseMove.y }
+		);
+		const sf::Vector2f delta = mouse_drag_start - mouse_drag_end;
+		ctx.lidar_view.setCenter(ctx.lidar_view.getCenter() + delta);
+		mouse_drag_start = window.mapPixelToCoords(
+			{ event.mouseMove.x, event.mouseMove.y }
+		);
+		break;
+	}
+	case sf::Event::MouseWheelScrolled:
+		if (mouse_drag) {
+		    break;
+		}
+		if (event.mouseWheelScroll.delta <= -1) {
+		    zoom = std::min(2.f, zoom + .1f);
+		} else if (event.mouseWheelScroll.delta >= 1) {
+		    zoom = std::max(.5f, zoom - .1f);
+		}
+		ctx.lidar_view.setSize(LIDAR_TV_WIDTH, LIDAR_TV_HEIGHT);
+		ctx.lidar_view.zoom(zoom);
+		break;
+	case sf::Event::KeyReleased:
+		switch (event.key.code) {
+		case sf::Keyboard::F5:
+			ctx.enable_debug_text = !ctx.enable_debug_text;
+			break;
+		case sf::Keyboard::F6:
+			ctx.lidar_renderer.toggle_rays();
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void Display::_update_camera(Context & ctx) const
+{
+	if (_oz.getCamera().has_image() || is_sf_image_empty(ctx.camera_disabled_sprite)) {
+		auto left_image = _oz.getCamera().get_left_image().lock();
+		auto right_image = _oz.getCamera().get_right_image().lock();
+		ctx.left_camera_texture.update(left_image.get());
+		ctx.right_camera_texture.update(right_image.get());
+	} else {
+		ctx.left_camera_texture.update(
+			ctx.camera_disabled_sprite, CAMERA_DISABLED_X, CAMERA_DISABLED_Y);
+		ctx.right_camera_texture.update(
+			ctx.camera_disabled_sprite, CAMERA_DISABLED_X, CAMERA_DISABLED_Y);
+	}
+}
+
+void Display::_update_lidar(Context & ctx) const
+{
+	auto distances = _oz.getLidar().get_distances().lock();
+	if (distances) {
+		ctx.lidar_renderer.update(*distances.get());
+	}
+}
+
+void Display::_update_debug_text(Context & ctx) const
+{
+	if (!ctx.enable_debug_text) {
+		return;
+	}
+	std::stringstream out;
+	auto & stats = _gateway.get_stats();
+	out << "Gateway ["
+	  << std::to_string(stats.at("command_packets_transmitted")) << "/"
+	  << std::to_string(stats.at("camera_packets_transmitted")) << " tx | "
+	  << std::to_string(stats.at("command_packets_received")) << "/"
+	  << std::to_string(stats.at("camera_packets_received")) << " rx | "
+	  << std::to_string(stats.at("command_packets_lost")) << "/"
+	  << std::to_string(stats.at("camera_packets_lost")) << " lost | "
+	  << std::to_string(stats.at("command_packets_bad")) << "/"
+	  << std::to_string(stats.at("camera_packets_bad")) << " bad]"
+	  << "\n"
+	  << "Command Socket [" << (_gateway.is_command_connected()? "ON" : "OFF") << "]\n"
+	  << "Camera Socket [" << (_gateway.is_camera_connected()? "ON" : "OFF") << "]\n";
+	ctx.debug_text.setString(out.str());
+}
+
+void Display::_draw(sf::RenderWindow & window, Context & ctx)
+{
+	window.draw(ctx.border_camera_left);
+	window.draw(ctx.title_border_camera_left);
+	window.draw(ctx.title_camera_left_text);
+	window.draw(ctx.left_camera_sprite);
+
+	window.draw(ctx.border_camera_right);
+	window.draw(ctx.title_border_camera_right);
+	window.draw(ctx.title_camera_right_text);
+	window.draw(ctx.right_camera_sprite);
+
+	window.draw(ctx.border_lidar);
+	window.draw(ctx.title_border_lidar);
+	window.draw(ctx.title_lidar_text);
+	window.setView(ctx.lidar_view);
+	window.draw(ctx.lidar_renderer);
+	window.setView(window.getDefaultView());
+
+	if (ctx.enable_debug_text) {
+		window.draw(ctx.debug_text);
 	}
 }
 

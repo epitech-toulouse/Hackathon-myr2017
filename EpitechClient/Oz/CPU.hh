@@ -1,12 +1,15 @@
+#pragma once
+#include "Oz/Unit.hh"
+
 namespace Oz
 {
-  class CPU
+  class CPU : public Unit
   {
   private:
 
 
   public:
     explicit CPU(void);
-    ~CPU() {}
+    void update() override;
   };
 }

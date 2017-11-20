@@ -8,22 +8,22 @@
 #include <cstring>
 #include <cstdint>
 #include <ApiCodec/ApiStereoCameraPacket.hpp>
-#include "Gateway/Gateway.hh"
 #include "constants.hh"
+#include "Gateway/Gateway.hh"
+#include "Oz/Unit.hh"
 
 namespace Oz {
 
-class Camera
+class Camera : public Unit
 {
 	friend class CameraStateError;
 
 public:
 	explicit Camera(Gateway::Gateway & gateway);
-	~Camera();
-	void start();
-	void stop() noexcept;
-	void share_screen_buffers(const uint8_t **, const uint8_t **) const noexcept;
-	bool is_running() const noexcept;
+	bool has_image() const noexcept;
+	void update() override;
+	const std::weak_ptr<uint8_t[]> get_left_image() const noexcept;
+	const std::weak_ptr<uint8_t[]> get_right_image() const noexcept;
 
 private:
 	void _read() noexcept;
@@ -31,9 +31,9 @@ private:
 
 private:
 	Gateway::Gateway & _gateway;
-	uint8_t * _left_buffer;
-	uint8_t * _right_buffer;
-	std::atomic<bool> _running;
+	std::shared_ptr<uint8_t[]> _left_buffer;
+	std::shared_ptr<uint8_t[]> _right_buffer;
+	bool _has_image;
 	std::chrono::milliseconds _latest_read;
 	std::thread _thread;
 };

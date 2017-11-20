@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <functional>
 #include <ApiCodec/ApiCommandPacket.hpp>
@@ -7,21 +9,26 @@
 #include "Display/Display.hh"
 #include "Gateway/Gateway.hh"
 #include "Oz/Oz.hh"
+#include "System.hh"
+#include "Arguments.hh"
 
 namespace Playground
 {
 
   class Playground
-  {    
+  {
   private:
+    Arguments args;
+    System system;
     Gateway::Gateway gateway;
     Oz::Oz oz;
     Display::Display display;
 
     int run(void);
+    std::thread _update_thread();
 
   public:
-    explicit Playground(const std::string &, const std::string &, const std::string &);
+    explicit Playground(int argc, char ** argv);
     ~Playground() {};
 
     Oz::Oz & getOz(void);
