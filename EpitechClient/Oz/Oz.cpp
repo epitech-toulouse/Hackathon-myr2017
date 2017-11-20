@@ -6,7 +6,7 @@ namespace Oz {
 Oz::Oz(Gateway::Gateway & gateway) :
 	camera { gateway },
 	lidar { gateway },
-	motor {},
+	motor { gateway },
 	cpu {},
 	_iterable { camera, lidar, motor, cpu }
 {
