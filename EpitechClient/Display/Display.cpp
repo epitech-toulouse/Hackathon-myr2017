@@ -264,7 +264,10 @@ void Display::_update_debug_text(Context & ctx) const
 	  << std::to_string(stats.at("camera_packets_bad")) << " bad]"
 	  << "\n"
 	  << "Command Socket [" << (_gateway.is_command_connected()? "ON" : "OFF") << "]\n"
-	  << "Camera Socket [" << (_gateway.is_camera_connected()? "ON" : "OFF") << "]\n";
+	  << "Camera Socket [" << (_gateway.is_camera_connected()? "ON" : "OFF") << "]\n"
+	  << "GPS lat = " << (_oz.getGPS().getLat()) << "\n"
+	  << "GPS lon = " << (_oz.getGPS().getLon()) << "\n"
+	  << "GPS alt = " << (_oz.getGPS().getAlt()) << "\n";
 	ctx.debug_text.setString(out.str());
 }
 

@@ -8,7 +8,8 @@ Oz::Oz(Gateway::Gateway & gateway) :
 	lidar { gateway },
 	motor {},
 	cpu {},
-	_iterable { camera, lidar, motor, cpu }
+	_iterable { camera, lidar, motor, cpu },
+	gps { gateway }
 {
 }
 
@@ -40,6 +41,11 @@ Oz::iterator Oz::begin() noexcept
 Oz::iterator Oz::end() noexcept
 {
 	return _iterable.end();
+}
+
+const GPS & Oz::getGPS() const noexcept
+{
+	return this->gps;
 }
 
 }

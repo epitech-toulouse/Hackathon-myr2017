@@ -5,6 +5,7 @@
 #include "Oz/Camera.hh"
 #include "Oz/CPU.hh"
 #include "Gateway/Gateway.hh"
+#include "Oz/GPS.hh"
 
 namespace Oz
 {
@@ -16,6 +17,7 @@ namespace Oz
     Motor motor;
     CPU cpu;
     std::array<std::reference_wrapper<Unit>, 4> _iterable;
+    GPS gps;
 
   public:
     typedef decltype(_iterable)::iterator iterator;
@@ -28,6 +30,7 @@ namespace Oz
     const CPU & getCPU() const noexcept;
     iterator begin() noexcept;
     iterator end() noexcept;
+    const GPS & getGPS() const noexcept;
 
   };
 
