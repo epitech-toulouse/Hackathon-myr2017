@@ -28,7 +28,8 @@ if(EXISTS ${ApiCodec_SOURCE_DIR}/CMakeLists.txt)
 		PATCH_COMMAND git checkout .
 			COMMAND patch -p1 --forward --force --input=${CMAKE_CURRENT_SOURCE_DIR}/patch/ApiCodec.patch
 		BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config $<CONFIG>
-		UPDATE_DISCONNECTED TRUE
+		#UPDATE_DISCONNECTED TRUE
+		UPDATE_COMMAND ""
 		INSTALL_COMMAND install -D <BINARY_DIR>/${ApiCodec_TARGET} <INSTALL_DIR>/lib/${ApiCodec_TARGET}
 			COMMAND ln -sf ${ApiCodec_TARGET} <INSTALL_DIR>/lib/libapicodec.so
 	)

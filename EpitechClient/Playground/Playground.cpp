@@ -38,6 +38,8 @@ namespace Playground
   {
     return std::thread([this](){
       while (this->gateway.is_running()) {
+        this->oz.getMotor().setSpeed(10);
+        this->oz.getMotor().setAngle(90);
 	for (Oz::Unit & unit : this->oz) {
 	  unit.update();
 	}

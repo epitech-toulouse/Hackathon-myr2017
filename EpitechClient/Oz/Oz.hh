@@ -16,8 +16,8 @@ namespace Oz
     Lidar lidar;
     Motor motor;
     CPU cpu;
-    std::array<std::reference_wrapper<Unit>, 4> _iterable;
     GPS gps;
+    std::array<std::reference_wrapper<Unit>, 5> _iterable;
 
   public:
     typedef decltype(_iterable)::iterator iterator;
@@ -27,11 +27,11 @@ namespace Oz
     const Camera & getCamera() const noexcept;
     const Lidar & getLidar() const noexcept;
     const Motor & getMotor() const noexcept;
+    Motor & getMotor() noexcept;
     const CPU & getCPU() const noexcept;
     iterator begin() noexcept;
     iterator end() noexcept;
     const GPS & getGPS() const noexcept;
-
   };
 
 }

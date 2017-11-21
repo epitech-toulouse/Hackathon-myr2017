@@ -77,7 +77,7 @@ file(GLOB_RECURSE PROJECT_SOURCE_FILES ${PROJECT_SOURCE_DIR}/EpitechClient/*.cpp
 
 # requires dependencies
 find_package(Threads REQUIRED)
-find_package(SFML 2.4 REQUIRED graphics window system)
+find_package(SFML 2.3 REQUIRED graphics window system)
 find_package(ZLIB 1.2 REQUIRED)
 find_package(ApiCodec 0.0.1 REQUIRED)
 

@@ -6,10 +6,10 @@ namespace Oz {
 Oz::Oz(Gateway::Gateway & gateway) :
 	camera { gateway },
 	lidar { gateway },
-	motor {},
+	motor { gateway },
 	cpu {},
-	_iterable { camera, lidar, motor, cpu },
-	gps { gateway }
+	gps { gateway },
+	_iterable { camera, lidar, motor, cpu , gps}
 {
 }
 
@@ -24,6 +24,11 @@ const Lidar & Oz::getLidar() const noexcept
 }
 
 const Motor & Oz::getMotor() const noexcept
+{
+	return this->motor;
+}
+
+Motor & Oz::getMotor() noexcept
 {
 	return this->motor;
 }
