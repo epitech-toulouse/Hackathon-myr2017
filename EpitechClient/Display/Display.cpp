@@ -267,7 +267,10 @@ void Display::_update_debug_text(Context & ctx) const
 	  << "Camera Socket [" << (_gateway.is_camera_connected()? "ON" : "OFF") << "]\n"
 	  << "GPS lat = " << (_oz.getGPS().getLat()) << "\n"
 	  << "GPS lon = " << (_oz.getGPS().getLon()) << "\n"
-	  << "GPS alt = " << (_oz.getGPS().getAlt()) << "\n";
+	  << "GPS alt = " << (_oz.getGPS().getAlt()) << "\n"
+	  << "Gyro X = " << (_oz.getGyro().getX()) << "\n"
+	  << "Gyro Y = " << (_oz.getGyro().getY()) << "\n"
+	  << "Gyro Z = " << (_oz.getGyro().getZ()) << "\n";
 	ctx.debug_text.setString(out.str());
 }
 
