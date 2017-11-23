@@ -24,12 +24,22 @@ namespace Oz
 
   public:
     explicit Oz(Gateway::Gateway &);
+
     const Camera & getCamera() const noexcept;
+    Camera & getCamera() noexcept;
+
     const Lidar & getLidar() const noexcept;
+    Lidar & getLidar() noexcept;
+
     const Motor & getMotor() const noexcept;
     Motor & getMotor() noexcept;
+
     const CPU & getCPU() const noexcept;
+    CPU & getCPU() noexcept;
+
     const GPS & getGPS() const noexcept;
+    GPS & getGPS() noexcept;
+
     iterator begin() noexcept;
     iterator end() noexcept;
   };

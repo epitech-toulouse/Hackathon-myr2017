@@ -18,7 +18,17 @@ const Camera & Oz::getCamera() const noexcept
 	return this->camera;
 }
 
+Camera & Oz::getCamera() noexcept
+{
+	return this->camera;
+}
+
 const Lidar & Oz::getLidar() const noexcept
+{
+	return this->lidar;
+}
+
+Lidar & Oz::getLidar() noexcept
 {
 	return this->lidar;
 }
@@ -38,7 +48,17 @@ const CPU & Oz::getCPU() const noexcept
 	return this->cpu;
 }
 
+CPU & Oz::getCPU() noexcept
+{
+	return this->cpu;
+}
+
 const GPS & Oz::getGPS() const noexcept
+{
+	return this->gps;
+}
+
+GPS & Oz::getGPS() noexcept
 {
 	return this->gps;
 }
