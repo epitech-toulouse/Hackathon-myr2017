@@ -21,8 +21,6 @@ void Algorithm::init()
 void Algorithm::update()
 {
 	Oz::Motor & motor = _oz.getMotor();
-	motor.setSpeed(10);
-	motor.setAngle(90);
 }
 
 }

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <iostream>
-#include <atomic>
 #include <thread>
+#include <ctime>
 #include <ApiCodec/HaMotorsPacket.hpp>
 #include "Gateway/Gateway.hh"
 #include "Oz/Unit.hh"
@@ -12,10 +12,18 @@ namespace Oz {
 class Motor : public Unit {
 private:
 	Gateway::Gateway & _gateway;
-	std::atomic<int8_t> _speed;
-	std::atomic<int8_t> _angleSpeed;
-	std::atomic<int8_t> _angle;
+	int8_t _speed;
+	int8_t _angleSpeed;
+	int8_t _angle;
+	int8_t _motorSpeed;
+	int8_t _motorAngleSpeed;
+	int8_t _motorAngle;
+	std::time_t _lastTime;
+
 	std::thread _thread;
+
+	static const int8_t ACCELERATION = 10;
+
 public:
 	explicit Motor(Gateway::Gateway & gateway);
 	~Motor();
@@ -28,6 +36,10 @@ public:
 	int8_t getSpeed() const;
 	int8_t getAngle() const;
 	int8_t getAngleSpeed() const;
+	int8_t getMotorSpeed() const;
+	int8_t getMotorAngle() const;
+	int8_t getMotorAngleSpeed() const;
+	void stop();
 };
 
 }

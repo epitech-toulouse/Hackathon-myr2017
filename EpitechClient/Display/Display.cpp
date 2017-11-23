@@ -268,6 +268,9 @@ void Display::_update_debug_text(Context & ctx) const
 	  << "GPS lat = " << (_oz.getGPS().getLat()) << "\n"
 	  << "GPS lon = " << (_oz.getGPS().getLon()) << "\n"
 	  << "GPS alt = " << (_oz.getGPS().getAlt()) << "\n"
+	  // << "Motor: Speed = " << (int)(_oz.getMotor().getSpeed()) << " " << (int)(_oz.getMotor().getMotorSpeed()) << "\n"
+	  // << "Motor: Angle = " << (int)(_oz.getMotor().getAngle()) << " " << (int)(_oz.getMotor().getMotorAngle()) << "\n"
+	  // << "Motor: AngleSpeed = " << (int)(_oz.getMotor().getMotorAngleSpeed()) << " " << (int)(_oz.getMotor().getMotorAngleSpeed()) << "\n"
 	  << "Gyro X = " << (_oz.getGyro().getX()) << "\n"
 	  << "Gyro Y = " << (_oz.getGyro().getY()) << "\n"
 	  << "Gyro Z = " << (_oz.getGyro().getZ()) << "\n";
