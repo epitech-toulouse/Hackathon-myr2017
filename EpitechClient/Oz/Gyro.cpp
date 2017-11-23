@@ -19,7 +19,6 @@ void Gyro::update()
         this->_xAngle = packet->x;
         this->_yAngle = packet->y;
         this->_zAngle = packet->z;
-        std::cout << (int)packet->x << " " << (int)packet->y << " " << (int)packet->z << std::endl;
 	}
 }
 
