@@ -8,7 +8,8 @@ namespace Playground
     system { },
     gateway { args.host, args.main_port, args.camera_port, args.read_interval, args.write_interval },
     oz { this->gateway },
-    display { this->system, this->gateway, this->oz }
+    display { this->system, this->gateway, this->oz },
+    algorithm { this->oz }
   {
     /* Launch playground */
     try {
@@ -21,12 +22,7 @@ namespace Playground
   int Playground::run()
   {
     this->gateway.start();
-    while (!this->gateway.is_running()) {
-      std::this_thread::sleep_for(WAIT_TIME_MS);
-    }
-    using Command = ApiCommandPacket::CommandType;
-    this->gateway.emplace<ApiCommandPacket>(Command::TURN_OFF_IMAGE_ZLIB_COMPRESSION);
-    this->gateway.emplace<ApiCommandPacket>(Command::TURN_ON_API_RAW_STEREO_CAMERA_PACKET);
+    this->algorithm.init();
     auto update_thread = _update_thread();
     this->display.show();
     this->gateway.stop();
@@ -38,11 +34,10 @@ namespace Playground
   {
     return std::thread([this](){
       while (this->gateway.is_running()) {
-        this->oz.getMotor().setSpeed(10);
-        this->oz.getMotor().setAngle(90);
 	for (Oz::Unit & unit : this->oz) {
 	  unit.update();
 	}
+	this->algorithm.update();
 	std::this_thread::sleep_for(std::chrono::milliseconds(args.read_interval));
       }
     });
