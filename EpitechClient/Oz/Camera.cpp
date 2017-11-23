@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <ApiCodec/ApiCommandPacket.hpp>
 #include <ApiCodec/ApiStereoCameraPacket.hpp>
 #include "Oz/Camera.hh"
 #include "exceptions.hh"
@@ -30,6 +31,24 @@ const std::weak_ptr<uint8_t[]> Camera::get_right_image() const noexcept
 bool Camera::has_image() const noexcept
 {
 	return _has_image;
+}
+
+void Camera::enable_compression(bool enable) noexcept
+{
+	using CommandType = ApiCommandPacket::CommandType;
+	_gateway.emplace<ApiCommandPacket>(enable?
+		CommandType::TURN_ON_IMAGE_ZLIB_COMPRESSION :
+		CommandType::TURN_OFF_IMAGE_ZLIB_COMPRESSION
+	);
+}
+
+void Camera::enable_raw(bool enable) noexcept
+{
+	using CommandType = ApiCommandPacket::CommandType;
+	_gateway.emplace<ApiCommandPacket>(enable?
+		CommandType::TURN_ON_API_RAW_STEREO_CAMERA_PACKET :
+		CommandType::TURN_OFF_API_RAW_STEREO_CAMERA_PACKET
+	);
 }
 
 void Camera::update()
