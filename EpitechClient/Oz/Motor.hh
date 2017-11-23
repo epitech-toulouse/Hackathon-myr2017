@@ -24,8 +24,10 @@ public:
 
 	void setSpeed(int8_t speed);
 	void setAngle(int8_t angle);
+	void setAngleSpeed(int8_t speed);
 	int8_t getSpeed() const;
 	int8_t getAngle() const;
+	int8_t getAngleSpeed() const;
 };
 
 }

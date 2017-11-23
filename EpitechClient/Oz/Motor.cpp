@@ -26,12 +26,20 @@ void    Motor::setAngle(int8_t angle){
     _angle = angle;
 }
 
+void	Motor::setAngleSpeed(int8_t speed){
+	_angleSpeed = speed;
+}
+
 int8_t  Motor::getSpeed() const{
     return(_speed);
 }
 
 int8_t  Motor::getAngle() const{
     return(_angle);
+}
+
+int8_t  Motor::getAngleSpeed() const{
+    return(_angleSpeed);
 }
 
 }
