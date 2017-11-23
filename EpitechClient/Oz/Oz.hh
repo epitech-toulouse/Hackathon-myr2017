@@ -29,9 +29,9 @@ namespace Oz
     const Motor & getMotor() const noexcept;
     Motor & getMotor() noexcept;
     const CPU & getCPU() const noexcept;
+    const GPS & getGPS() const noexcept;
     iterator begin() noexcept;
     iterator end() noexcept;
-    const GPS & getGPS() const noexcept;
   };
 
 }
