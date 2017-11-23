@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include "exceptions.hh"
 #include "constants.hh"
+#include "Algorithm/Algorithm.hh"
 #include "Display/Display.hh"
 #include "Gateway/Gateway.hh"
 #include "Oz/Oz.hh"
@@ -23,6 +24,7 @@ namespace Playground
     Gateway::Gateway gateway;
     Oz::Oz oz;
     Display::Display display;
+    Algorithm::Algorithm algorithm;
 
     int run(void);
     std::thread _update_thread();

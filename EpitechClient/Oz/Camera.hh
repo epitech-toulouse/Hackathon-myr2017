@@ -24,6 +24,8 @@ public:
 	void update() override;
 	const std::weak_ptr<uint8_t[]> get_left_image() const noexcept;
 	const std::weak_ptr<uint8_t[]> get_right_image() const noexcept;
+	void enable_compression(bool) noexcept;
+	void enable_raw(bool) noexcept;
 
 private:
 	void _read() noexcept;
