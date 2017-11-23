@@ -10,7 +10,8 @@ Oz::Oz(Gateway::Gateway & gateway) :
 	cpu {},
 	gps { gateway },
 	gyro { gateway },
-	_iterable { camera, lidar, motor, cpu, gps, gyro}
+	odo { gateway }, 
+	_iterable { camera, lidar, motor, cpu, gps, gyro, odo}
 {
 }
 
@@ -72,6 +73,16 @@ const Gyro & Oz::getGyro() const noexcept
 Gyro & Oz::getGyro() noexcept
 {
 	return this->gyro;
+}
+
+const ODO & Oz::getODO() const noexcept
+{
+	return this->odo;
+}
+
+ODO & Oz::getODO() noexcept
+{
+	return this->odo;
 }
 
 Oz::iterator Oz::begin() noexcept

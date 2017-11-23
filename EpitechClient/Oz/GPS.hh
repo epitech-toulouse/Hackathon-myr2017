@@ -17,6 +17,7 @@ public:
 	double getLat() const noexcept;
     double getLon() const noexcept;
     double getAlt() const noexcept;
+    double getGPSSpeed() const noexcept;
 
 private:
 	Gateway::Gateway & _gateway;

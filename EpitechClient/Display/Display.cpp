@@ -273,7 +273,8 @@ void Display::_update_debug_text(Context & ctx) const
 	  // << "Motor: AngleSpeed = " << (int)(_oz.getMotor().getMotorAngleSpeed()) << " " << (int)(_oz.getMotor().getMotorAngleSpeed()) << "\n"
 	  << "Gyro X = " << (_oz.getGyro().getX()) << "\n"
 	  << "Gyro Y = " << (_oz.getGyro().getY()) << "\n"
-	  << "Gyro Z = " << (_oz.getGyro().getZ()) << "\n";
+	  << "Gyro Z = " << (_oz.getGyro().getZ()) << "\n"
+	  << "Speed = " << (_oz.getODO().getSpeed()) << "\n";
 	ctx.debug_text.setString(out.str());
 }
 

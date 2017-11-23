@@ -46,4 +46,9 @@ double GPS::getAlt() const noexcept
 {
     return _alt;
 }
+
+double GPS::getGPSSpeed() const noexcept
+{
+    return _groundSpeed;
+}
 }
