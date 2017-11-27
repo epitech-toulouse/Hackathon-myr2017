@@ -82,13 +82,23 @@ public:
 	explicit Algorithm(Oz::Oz &);
 	void init();
 	void update();
+
 	const std::chrono::milliseconds get_scan_time() const noexcept;
 	const Scanner & get_scanner() const noexcept;
 
 private:
+	void (Algorithm::*_next)(void);
 	Oz::Oz & _oz;
 	Scanner _scanner;
 	std::chrono::milliseconds _scan_time;
+/*
+ * Internal functions
+ */
+private:
+	void wait();
+	void goStraightForPlow();
+	void endPlow();
+	void turnOnNextLigne();
 };
 
 

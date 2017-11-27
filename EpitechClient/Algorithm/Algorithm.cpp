@@ -152,6 +152,7 @@ void Scanner::expand(cluster_info cluster, std::list<Scanner::point_reference> &
 
 
 Algorithm::Algorithm(Oz::Oz & oz) :
+	_next { nullptr },
 	_oz { oz },
 	_scanner { }
 {
@@ -163,6 +164,7 @@ void Algorithm::init()
 	Oz::Camera & camera = _oz.getCamera();
 	camera.enable_compression(false);
 	camera.enable_raw(true);
+	_next = &Algorithm::wait;
 }
 
 void Algorithm::update()
@@ -174,14 +176,49 @@ void Algorithm::update()
 	});
 
 	// Move
+	(this->*_next)();
+}
+
+void Algorithm::wait()
+{
+	Oz::Lidar & lidar = _oz.getLidar();
+	if (lidar.detect() > 1)
+	{
+		_next = &Algorithm::goStraightForPlow;
+	}	
+}
+
+void Algorithm::goStraightForPlow()
+{
 	Oz::Motor & motor = _oz.getMotor();
 	Oz::Lidar & lidar = _oz.getLidar();
 	if (lidar.detect() > 0) {
-		motor.setSpeed(127);
+		motor.setSpeed(50);
 		motor.setAngle(0);
 	} else {
-		motor.setSpeed(0);
+		//TODO Do some actions
 	}
+	_next = &Algorithm::endPlow;
+}
+
+void Algorithm::endPlow()
+{
+	Oz::Motor & motor = _oz.getMotor();
+	Oz::Lidar & lidar = _oz.getLidar();
+	if (lidar.detect() == 0) {
+		motor.setSpeed(0);
+		motor.setAngle(0);
+		if (motor.getMotorSpeed() == 0)
+		{
+			_next = &Algorithm::turnOnNextLigne;
+		}
+	}
+}
+
+void Algorithm::turnOnNextLigne()
+{
+	Oz::Motor & motor = _oz.getMotor();
+	motor.setSpeed(-125);
 }
 
 const std::chrono::milliseconds Algorithm::get_scan_time() const noexcept
