@@ -54,8 +54,8 @@ struct Arguments arg_parse(int argc, char ** argv)
 		.host = std::string(default_host),
 		.main_port = std::string(default_main_port),
 		.camera_port = std::string(default_camera_port),
-		.read_interval = std::stoul(default_read_interval),
-		.write_interval = std::stoul(default_write_interval)
+		.read_interval = static_cast<unsigned>(std::stoul(default_read_interval)),
+		.write_interval = static_cast<unsigned>(std::stoul(default_write_interval))
 	};
 	int flag;
 	int option_index;
@@ -84,10 +84,10 @@ struct Arguments arg_parse(int argc, char ** argv)
 			args.camera_port = std::string(optarg);
 			break;
 		case 'r':
-			args.read_interval = std::stoul(optarg);
+			args.read_interval = static_cast<unsigned>(std::stoul(optarg));
 			break;
 		case 'w':
-			args.write_interval = std::stoul(optarg);
+			args.write_interval = static_cast<unsigned>(std::stoul(optarg));
 			break;
 		case '?':
 			/* getopt_long already printed an error message. */

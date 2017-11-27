@@ -40,18 +40,7 @@ RenderLidar::RenderLidar(void) :
 
 	_angle_grid_lines.append({{0, 0}, sf::Color(_grid_lines_color)});
 	_angle_grid_lines.append({sf_vec2_from_polar(4000.0f, 180.0f), _grid_lines_color});
-#if 0
-	for (size_t idx = 0 ; idx < 28 * 2 ; ++idx) {
-		double x = 1000.0 * cos(angle * M_PI / 180.0);
-		double y = 1000.0 * sin(angle * M_PI / 180.0);
-		_angle_grid_lines[idx].position = sf::Vector2f(0, 0);
-		_angle_grid_lines[idx].color = sf::Color(_grid_lines_color);
-		++idx;
-		_angle_grid_lines[idx].position = sf::Vector2f(static_cast<float>(x), static_cast<float>(y));
-		_angle_grid_lines[idx].color = sf::Color(_grid_lines_color);
-		angle += 10.0;
-	}
-#endif
+
 	float radius = 0.0f;
 	for (auto & line : _radius_grid_lines) {
 		radius += 400.0f;
@@ -66,8 +55,8 @@ RenderLidar::RenderLidar(void) :
 void RenderLidar::update_rays(const std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> & distances)
 {
 	for (size_t angle = 0 ; angle < distances.size() ; ++angle) {
-		double dist = distances[angle];
-		auto vec = sf_vec2_from_polar<float>(dist, float(angle) + float(LIDAR_BEGIN_ANGLE));
+		float dist = distances[angle];
+		auto vec = sf_vec2_from_polar<float>(dist, static_cast<float>(angle) + static_cast<float>(LIDAR_BEGIN_ANGLE));
 		_vertices[angle].position = vec;
 		_vertices[angle].color = sf::Color(0xFFFFFFFF);
 		_ray_lines[angle * 2].position = vec;
@@ -84,12 +73,11 @@ void RenderLidar::update_lines(const std::deque<std::vector<Algorithm::point>> &
 		new_size += current_line.size();
 	}
 	_vao_list_vegetable_lines.clear();
-	size_t vertex = 0;
 	for (auto & current_line : lines) {
 		size_t len = current_line.size();
 		sf::VertexArray vao { sf::LineStrip, len };
 		for (size_t idx = 0 ; idx < len ; ++idx) {
-			vao[idx].position = sf::Vector2f(current_line[idx].x, current_line[idx].y);
+			vao[idx].position = sf::Vector2f(static_cast<float>(current_line[idx].x), static_cast<float>(current_line[idx].y));
 			vao[idx].color = sf::Color(0x00FFFFFF);
 		}
 		_vao_list_vegetable_lines.push_back(vao);
@@ -106,7 +94,7 @@ void RenderLidar::zoom(float factor)
 	_zoom = factor;
 }
 
-void RenderLidar::draw(sf::RenderTarget& target, sf::RenderStates states) const
+void RenderLidar::draw(sf::RenderTarget & target, sf::RenderStates states) const
 {
 	states.texture = NULL;
 	sf::RenderStates inv = states;

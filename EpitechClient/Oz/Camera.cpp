@@ -96,18 +96,29 @@ void Camera::_update_buffers(
 			std::cerr << "Bad colorized image size!" << std::endl;
 			return;
 		}
+	/*
+	 * FIXME: GCC implicitly convert sometimes size_t to ptrdiff_t, and
+	 * sometimes ptrdiff_t to size_t so it always triggers a warning here ><.
+	 */
+#if defined(__GNUC__)
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wsign-conversion"
+#endif
 		for (size_t x = 0 ; x < CAMERA_CAPTURE_RESOLUTION * 4 ; ++x) {
-			_left_buffer[(x*4) + 0] = data_buffer[(x*3) + 0];
-			_left_buffer[(x*4) + 1] = data_buffer[(x*3) + 1];
-			_left_buffer[(x*4) + 2] = data_buffer[(x*3) + 2];
-			_left_buffer[(x*4) + 3] = 255;
+			_left_buffer[x*4+0] = data_buffer[x*3+0];
+			_left_buffer[x*4+1] = data_buffer[x*3+1];
+			_left_buffer[x*4+2] = data_buffer[x*3+2];
+			_left_buffer[x*4+3] = 255;
 		}
 		for (size_t x = 0 ; x < CAMERA_CAPTURE_RESOLUTION * 4 ; ++x) {
-			_right_buffer[(x*4) + 0] = data_buffer[(x*3) + 0 + CAMERA_CAPTURE_RESOLUTION * 4];
-			_right_buffer[(x*4) + 1] = data_buffer[(x*3) + 1 + CAMERA_CAPTURE_RESOLUTION * 4];
-			_right_buffer[(x*4) + 2] = data_buffer[(x*3) + 2 + CAMERA_CAPTURE_RESOLUTION * 4];
-			_right_buffer[(x*4) + 3] = 255;
+			_right_buffer[x*4+0] = data_buffer[x*3+0+CAMERA_CAPTURE_RESOLUTION*4];
+			_right_buffer[x*4+1] = data_buffer[x*3+1+CAMERA_CAPTURE_RESOLUTION*4];
+			_right_buffer[x*4+2] = data_buffer[x*3+2+CAMERA_CAPTURE_RESOLUTION*4];
+			_right_buffer[x*4+3] = 255;
 		}
+#if defined(__GNUC__)
+# pragma GCC diagnostic pop
+#endif
 	}
 }
 

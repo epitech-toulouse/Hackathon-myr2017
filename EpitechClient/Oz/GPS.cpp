@@ -26,7 +26,7 @@ void GPS::update()
 		this->_lat = packet->lat;
 		this->_lon = packet->lon;
 		this->_alt = packet->alt;
-		this->_unit = packet->unit;
+		this->_unit = static_cast<char>(packet->unit);
 		this->_satUsed = packet->satUsed;
 		this->_quality = packet->quality;
 		this->_groundSpeed = packet->groundSpeed;

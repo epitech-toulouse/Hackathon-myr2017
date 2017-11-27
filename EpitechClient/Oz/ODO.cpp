@@ -28,22 +28,22 @@ void ODO::update()
     std::shared_ptr<HaOdoPacket> packet = _gateway.get<HaOdoPacket>();
 	if (packet != nullptr) {
         if (this->_frontRight != packet->fr) {
-            this->_speedFR = 6.465 / (time - this->_lastTimeFR) *  3.6 / 100;
+            this->_speedFR = 6.465 / static_cast<double>(time - this->_lastTimeFR) *  3.6 / 100;
             this->_frontRight = packet->fr;
             this->_lastTimeFR = time;
         }
         if (this->_rearRight != packet->rr) {
-            this->_speedRR = 6.465 / (time - this->_lastTimeRR) *  3.6 / 100;
+            this->_speedRR = 6.465 / static_cast<double>(time - this->_lastTimeRR) *  3.6 / 100;
             this->_rearRight = packet->rr;
             this->_lastTimeRR = time;
         }
         if (this->_rearLeft != packet->rl) {
-            this->_speedRL = 6.465 / (time - this->_lastTimeRL) *  3.6 / 100;
+            this->_speedRL = 6.465 / static_cast<double>(time - this->_lastTimeRL) *  3.6 / 100;
             this->_rearLeft = packet->rl;
             this->_lastTimeRL = time;
         }
         if (this->_frontLeft != packet->fl) {
-            this->_speedFL = 6.465 / (time - this->_lastTimeFL) *  3.6 / 100;
+            this->_speedFL = 6.465 / static_cast<double>(time - this->_lastTimeFL) *  3.6 / 100;
             this->_frontLeft = packet->fl;
             this->_lastTimeFL = time;
         }

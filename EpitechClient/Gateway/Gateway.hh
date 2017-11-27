@@ -64,11 +64,15 @@ private:
 	void _set(std::shared_ptr<BaseNaio01Packet> packet) noexcept;
 
 // FIXME: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80985
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnoexcept-type"
+#if defined(__GNUC__)
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wnoexcept-type"
+#endif
 	template<typename Callable> inline std::thread _make_thread(const std::string &, Callable &&);
 	template<typename Callable> void _thread_exception_wrapper(const std::string &, Callable &&);
-#pragma GCC diagnostic pop
+#if defined(__GNUC__)
+# pragma GCC diagnostic pop
+#endif
 
 private:
 	std::atomic<bool> _running;
