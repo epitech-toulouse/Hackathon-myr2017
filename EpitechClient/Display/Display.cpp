@@ -274,7 +274,8 @@ void Display::_update_debug_text(Context & ctx) const
 	  << "Gyro X = " << (_oz.getGyro().getX()) << "\n"
 	  << "Gyro Y = " << (_oz.getGyro().getY()) << "\n"
 	  << "Gyro Z = " << (_oz.getGyro().getZ()) << "\n"
-	  << "Speed = " << (_oz.getODO().getSpeed()) << "\n";
+	  << "Speed = " << (_oz.getODO().getSpeed()) << "\n"
+	  << "Position Actuator = " << (_oz.getActuator().getPosition()) << "\n";
 	ctx.debug_text.setString(out.str());
 }
 
