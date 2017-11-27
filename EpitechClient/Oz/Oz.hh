@@ -7,6 +7,8 @@
 #include "Gateway/Gateway.hh"
 #include "Oz/GPS.hh"
 #include "Oz/Gyro.hh"
+#include "Oz/ODO.hh"
+#include "Oz/Actuator.hh"
 
 namespace Oz
 {
@@ -19,7 +21,9 @@ namespace Oz
     CPU cpu;
     GPS gps;
     Gyro gyro;
-    std::array<std::reference_wrapper<Unit>, 6> _iterable;
+    ODO odo;
+    Actuator actuator;
+    std::array<std::reference_wrapper<Unit>, 8> _iterable;
 
   public:
     typedef decltype(_iterable)::iterator iterator;
@@ -44,7 +48,13 @@ namespace Oz
 
     const Gyro & getGyro() const noexcept;
     Gyro & getGyro() noexcept;
-    
+
+    const ODO & getODO() const noexcept;
+    ODO & getODO() noexcept;
+
+    const Actuator & getActuator() const noexcept;
+    Actuator & getActuator() noexcept;
+
     iterator begin() noexcept;
     iterator end() noexcept;
   };
