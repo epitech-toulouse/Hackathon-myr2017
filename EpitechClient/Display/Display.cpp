@@ -316,8 +316,8 @@ void Display::_update_debug_text(Context & ctx) const
 	out
 	  << "Algorithm: " << _algorithm.get_scan_time().count() << "ms, "
 	  << _algorithm.get_scanner().get_iterations_count() << " iterations, "
-	  << _algorithm.get_scanner().get_sub_lines().size() << " connected lines" << "\n";
-
+	  << _algorithm.get_scanner().get_sub_lines().size() << " connected lines" << "\n"
+	  << "Position Actuator = " << (int)(_oz.getActuator().getPosition()) << "\n";
 	ctx.debug_text.setString(out.str());
 }
 

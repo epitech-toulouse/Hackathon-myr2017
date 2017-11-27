@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include <ApiCodec/HaActuatorPacket.hpp>
+#include <ApiCodec/ApiMoveActuatorPacket.hpp>
 #include <ctime>
 #include <iostream>
 #include "constants.hh"
@@ -17,6 +17,7 @@ public:
 	explicit Actuator(Gateway::Gateway & gateway);
 	void update() override;
 	uint8_t getPosition() const noexcept;
+	void setPosition(uint8_t position);
 	
 private:
 	Gateway::Gateway & _gateway;

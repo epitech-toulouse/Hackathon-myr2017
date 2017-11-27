@@ -12,14 +12,16 @@ Actuator::Actuator(Gateway::Gateway & gateway) :
 
 void Actuator::update()
 {
-    std::shared_ptr<HaActuatorPacket> packet = _gateway.get<HaActuatorPacket>();
-	if (packet != nullptr) {
-        this->_position = packet->position;
-    }
+    _gateway.emplace<ApiMoveActuatorPacket>(_position);
 }
 
 uint8_t Actuator::getPosition() const noexcept
 {
     return this->_position;
+}
+
+void Actuator::setPosition(uint8_t position)
+{
+    _position = position;
 }
 }
