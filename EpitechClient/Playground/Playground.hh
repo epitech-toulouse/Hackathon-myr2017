@@ -23,8 +23,8 @@ namespace Playground
     System system;
     Gateway::Gateway gateway;
     Oz::Oz oz;
-    Display::Display display;
     Algorithm::Algorithm algorithm;
+    Display::Display display;
 
     int run(void);
     std::thread _update_thread();

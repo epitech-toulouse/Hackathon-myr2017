@@ -8,8 +8,8 @@ namespace Playground
     system { },
     gateway { args.host, args.main_port, args.camera_port, args.read_interval, args.write_interval },
     oz { this->gateway },
-    display { this->system, this->gateway, this->oz },
-    algorithm { this->oz }
+    algorithm { this->oz },
+    display { this->system, this->gateway, this->oz, this->algorithm }
   {
     /* Launch playground */
     try {

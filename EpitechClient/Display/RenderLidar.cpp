@@ -10,11 +10,11 @@ RenderLidar::RenderLidar(void) :
 	_vertices { sf::Points, LIDAR_CAPTURE_RESOLUTION },
 	_ray_lines { sf::Lines, LIDAR_CAPTURE_RESOLUTION * 2 },
 	_background { sf::Triangles, 6 },
-	_angle_grid_lines { sf::Lines, 28 * 2 },
+	_angle_grid_lines { sf::Lines },
 	_enable_rays { true }
 {
 	/* Background */
-	float half = 1000.0f; /* Background half size */
+	float half = 1.0f; /* Background half size */
 	_background[0].position = sf::Vector2f(-half, -half);
 	_background[1].position = sf::Vector2f(-half, half);
 	_background[2].position = sf::Vector2f(half, -half);
@@ -26,7 +26,21 @@ RenderLidar::RenderLidar(void) :
 	}
 
 	/* Grid */
-	double angle = LIDAR_BEGIN_ANGLE;
+	_angle_grid_lines.append({{0, 0}, sf::Color(_grid_lines_color)});
+	_angle_grid_lines.append({sf_vec2_from_polar(4000.0f, {LIDAR_BEGIN_ANGLE}), _grid_lines_color});
+
+	_angle_grid_lines.append({{0, 0}, sf::Color(_grid_lines_color)});
+	_angle_grid_lines.append({sf_vec2_from_polar(4000.0f, {LIDAR_END_ANGLE}), _grid_lines_color});
+
+	_angle_grid_lines.append({{0, 0}, sf::Color(_grid_lines_color)});
+	_angle_grid_lines.append({sf_vec2_from_polar(4000.0f, 0.0f), _grid_lines_color});
+
+	_angle_grid_lines.append({{0, 0}, sf::Color(_grid_lines_color)});
+	_angle_grid_lines.append({sf_vec2_from_polar(4000.0f, 90.0f), _grid_lines_color});
+
+	_angle_grid_lines.append({{0, 0}, sf::Color(_grid_lines_color)});
+	_angle_grid_lines.append({sf_vec2_from_polar(4000.0f, 180.0f), _grid_lines_color});
+#if 0
 	for (size_t idx = 0 ; idx < 28 * 2 ; ++idx) {
 		double x = 1000.0 * cos(angle * M_PI / 180.0);
 		double y = 1000.0 * sin(angle * M_PI / 180.0);
@@ -37,9 +51,10 @@ RenderLidar::RenderLidar(void) :
 		_angle_grid_lines[idx].color = sf::Color(_grid_lines_color);
 		angle += 10.0;
 	}
+#endif
 	float radius = 0.0f;
-	for (auto && line : _radius_grid_lines) {
-		radius += 50.0f;
+	for (auto & line : _radius_grid_lines) {
+		radius += 400.0f;
 		line.setPosition(-radius, -radius);
 		line.setRadius(radius);
 		line.setFillColor(sf::Color(0));
@@ -48,18 +63,36 @@ RenderLidar::RenderLidar(void) :
 	}
 }
 
-void RenderLidar::update(const std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> & distances)
+void RenderLidar::update_rays(const std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> & distances)
 {
 	for (size_t angle = 0 ; angle < distances.size() ; ++angle) {
-		double dist = distances[angle] / 10.0;
-		double x = dist * cos((static_cast<double>(angle) + LIDAR_BEGIN_ANGLE) * M_PI / 180.0);
-		double y = dist * sin((static_cast<double>(angle) + LIDAR_BEGIN_ANGLE) * M_PI / 180.0);
-		_vertices[angle].position = sf::Vector2f(static_cast<float>(x), static_cast<float>(y));
+		double dist = distances[angle];
+		auto vec = sf_vec2_from_polar<float>(dist, float(angle) + float(LIDAR_BEGIN_ANGLE));
+		_vertices[angle].position = vec;
 		_vertices[angle].color = sf::Color(0xFFFFFFFF);
-		_ray_lines[angle * 2].position = sf::Vector2f(static_cast<float>(x), static_cast<float>(y));
+		_ray_lines[angle * 2].position = vec;
 		_ray_lines[angle * 2].color = sf::Color(0x004411FF);
 		_ray_lines[angle * 2 + 1].position = sf::Vector2f();
 		_ray_lines[angle * 2 + 1].color = sf::Color(0x004411FF);
+	}
+}
+
+void RenderLidar::update_lines(const std::deque<std::vector<Algorithm::point>> & lines)
+{
+	size_t new_size = 0;
+	for (auto & current_line : lines) {
+		new_size += current_line.size();
+	}
+	_vao_list_vegetable_lines.clear();
+	size_t vertex = 0;
+	for (auto & current_line : lines) {
+		size_t len = current_line.size();
+		sf::VertexArray vao { sf::LineStrip, len };
+		for (size_t idx = 0 ; idx < len ; ++idx) {
+			vao[idx].position = sf::Vector2f(current_line[idx].x, current_line[idx].y);
+			vao[idx].color = sf::Color(0x00FFFFFF);
+		}
+		_vao_list_vegetable_lines.push_back(vao);
 	}
 }
 
@@ -68,17 +101,28 @@ void RenderLidar::toggle_rays()
 	_enable_rays = !_enable_rays;
 }
 
+void RenderLidar::zoom(float factor)
+{
+	_zoom = factor;
+}
+
 void RenderLidar::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
-	states.transform *= this->getTransform();
 	states.texture = NULL;
-	target.draw(_background, states);
+	sf::RenderStates inv = states;
+	inv.transform *= target.getView().getTransform().getInverse();
+	states.transform *= this->getTransform();
+	target.draw(_background, inv);
 	target.draw(_angle_grid_lines, states);
-	for (auto && line : _radius_grid_lines) {
+	for (auto line : _radius_grid_lines) {
+		line.setOutlineThickness(1.0f * _zoom);
 		target.draw(line, states);
 	}
 	if (_enable_rays) {
 		target.draw(_ray_lines, states);
+	}
+	for (const auto & vao : _vao_list_vegetable_lines) {
+		target.draw(vao, states);
 	}
 	target.draw(_vertices, states);
 }

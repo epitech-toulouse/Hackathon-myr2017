@@ -27,10 +27,16 @@ static const size_t CAMERA_DISABLED_X = (CAMERA_CAPTURE_WIDTH - CAMERA_DISABLED_
 static const size_t CAMERA_DISABLED_Y = (CAMERA_CAPTURE_HEIGHT - CAMERA_DISABLED_IMAGE_LEN) / 2;
 static const sf::Color BORDER_COLOR = sf::Color(0x34498EFF);
 
-Display::Display(const Playground::System & sys, const Gateway::Gateway & gateway, const Oz::Oz & oz) :
+Display::Display(
+	const Playground::System & sys,
+	const Gateway::Gateway & gateway,
+	const Oz::Oz & oz,
+	const Algorithm::Algorithm & algorithm
+) :
 	_system { sys },
 	_gateway { gateway },
 	_oz { oz },
+	_algorithm { algorithm },
 	_window_title { "Naio Move your Robot 2017 :: Epitech's API Client" },
 	_window_mode { VIDEO_WIDTH, VIDEO_HEIGHT },
 	_window_framerate { 60 }
@@ -137,6 +143,8 @@ std::unique_ptr<Context> Display::_build_context() const
 		float(LIDAR_TV_WIDTH) / float(VIDEO_WIDTH),
 		float(LIDAR_TV_HEIGHT) / float(VIDEO_HEIGHT)
 	));
+	ctx->lidar_view.zoom(10.0f);
+	ctx->lidar_renderer.zoom(10.0f);
 
 	ctx->border_lidar.setSize({LIDAR_TV_WIDTH, LIDAR_TV_HEIGHT});
 	ctx->border_lidar.setPosition(LIDAR_TV_X, LIDAR_TV_Y);
@@ -161,7 +169,7 @@ void Display::_on_event(const sf::Event & event, sf::RenderWindow & window, Cont
 {
 	static bool mouse_drag = false;
 	static sf::Vector2f mouse_drag_start;
-	static float zoom = 1.0f;
+	static float zoom = 10.0f;
 
 	switch (event.type) {
 	case sf::Event::Closed:
@@ -187,7 +195,7 @@ void Display::_on_event(const sf::Event & event, sf::RenderWindow & window, Cont
 		const sf::Vector2f mouse_drag_end = window.mapPixelToCoords(
 			{ event.mouseMove.x, event.mouseMove.y }
 		);
-		const sf::Vector2f delta = mouse_drag_start - mouse_drag_end;
+		const sf::Vector2f delta = (mouse_drag_start - mouse_drag_end) * zoom;
 		ctx.lidar_view.setCenter(ctx.lidar_view.getCenter() + delta);
 		mouse_drag_start = window.mapPixelToCoords(
 			{ event.mouseMove.x, event.mouseMove.y }
@@ -199,12 +207,13 @@ void Display::_on_event(const sf::Event & event, sf::RenderWindow & window, Cont
 		    break;
 		}
 		if (event.mouseWheelScroll.delta <= -1) {
-		    zoom = std::min(2.f, zoom + .1f);
+		    zoom = std::min(20.f, zoom + .1f * zoom);
 		} else if (event.mouseWheelScroll.delta >= 1) {
-		    zoom = std::max(.5f, zoom - .1f);
+		    zoom = std::max(.5f, zoom - .1f * zoom);
 		}
 		ctx.lidar_view.setSize(LIDAR_TV_WIDTH, LIDAR_TV_HEIGHT);
 		ctx.lidar_view.zoom(zoom);
+		ctx.lidar_renderer.zoom(zoom);
 		break;
 	case sf::Event::KeyReleased:
 		switch (event.key.code) {
@@ -242,8 +251,9 @@ void Display::_update_lidar(Context & ctx) const
 {
 	auto distances = _oz.getLidar().get_distances().lock();
 	if (distances) {
-		ctx.lidar_renderer.update(*distances.get());
+		ctx.lidar_renderer.update_rays(*distances.get());
 	}
+	ctx.lidar_renderer.update_lines(_algorithm.get_scanner().get_sub_lines());
 }
 
 void Display::_update_debug_text(Context & ctx) const
@@ -252,7 +262,11 @@ void Display::_update_debug_text(Context & ctx) const
 		return;
 	}
 	std::stringstream out;
+	const Oz::GPS & gps = _oz.getGPS();
+	const Oz::Lidar& lidar = _oz.getLidar();
 	auto & stats = _gateway.get_stats();
+
+	/* Gateway */
 	out << "Gateway ["
 	  << std::to_string(stats.at("command_packets_transmitted")) << "/"
 	  << std::to_string(stats.at("camera_packets_transmitted")) << " tx | "
@@ -262,18 +276,46 @@ void Display::_update_debug_text(Context & ctx) const
 	  << std::to_string(stats.at("camera_packets_lost")) << " lost | "
 	  << std::to_string(stats.at("command_packets_bad")) << "/"
 	  << std::to_string(stats.at("camera_packets_bad")) << " bad]"
-	  << "\n"
+	  << "\n\n";
+
+	/* Sockets */
+	out
 	  << "Command Socket [" << (_gateway.is_command_connected()? "ON" : "OFF") << "]\n"
-	  << "Camera Socket [" << (_gateway.is_camera_connected()? "ON" : "OFF") << "]\n"
-	  << "GPS lat = " << (_oz.getGPS().getLat()) << "\n"
-	  << "GPS lon = " << (_oz.getGPS().getLon()) << "\n"
-	  << "GPS alt = " << (_oz.getGPS().getAlt()) << "\n"
+	  << "Camera Socket [" << (_gateway.is_camera_connected()? "ON" : "OFF") << "]\n\n"
+
+	/* GPS */
+	  << "GPS (" << gps.getLat() << ", " << gps.getLon() << ", " << gps.getAlt() << ")";
+	if (gps.getUnit() != 0) {
+		out << " [unit: " << gps.getUnit() << "]";
+	}
+	out << " [" << static_cast<unsigned>(gps.getSatelliteCount()) << " satellites, "
+	  << "quality: " << static_cast<unsigned>(gps.getQuality()) << "]\n"
+	  << "Speed: " << gps.getGroundSpeed() * 1000.0 / 60.0 << " m/min\n";
+
 	  // << "Motor: Speed = " << (int)(_oz.getMotor().getSpeed()) << " " << (int)(_oz.getMotor().getMotorSpeed()) << "\n"
 	  // << "Motor: Angle = " << (int)(_oz.getMotor().getAngle()) << " " << (int)(_oz.getMotor().getMotorAngle()) << "\n"
 	  // << "Motor: AngleSpeed = " << (int)(_oz.getMotor().getMotorAngleSpeed()) << " " << (int)(_oz.getMotor().getMotorAngleSpeed()) << "\n"
+
+	/* Lidar */
+	out
+	  << "Lidar [" << lidar.detect() << " hits: "
+	  << lidar.detect_right() << " right, "
+	  << lidar.detect_left() << " left]"
+	  << " [extremums: " << lidar.detect_rightmost_angle() << " "
+	  << lidar.detect_leftmost_angle() << "]\n";
+
+	/* Gyrometer */
+	out
 	  << "Gyro X = " << (_oz.getGyro().getX()) << "\n"
 	  << "Gyro Y = " << (_oz.getGyro().getY()) << "\n"
 	  << "Gyro Z = " << (_oz.getGyro().getZ()) << "\n";
+
+	/* Algorithm */
+	out
+	  << "Algorithm: " << _algorithm.get_scan_time().count() << "ms, "
+	  << _algorithm.get_scanner().get_iterations_count() << " iterations, "
+	  << _algorithm.get_scanner().get_sub_lines().size() << " connected lines" << "\n";
+
 	ctx.debug_text.setString(out.str());
 }
 

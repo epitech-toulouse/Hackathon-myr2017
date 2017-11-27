@@ -38,7 +38,11 @@ class Display
 	Display & operator= (const Display &) = delete;
 
 public:
-	explicit Display(const Playground::System &, const Gateway::Gateway &, const Oz::Oz &);
+	explicit Display(
+		const Playground::System &,
+		const Gateway::Gateway &,
+		const Oz::Oz &,
+		const Algorithm::Algorithm &);
 	void show() noexcept;
 
 private:
@@ -54,6 +58,7 @@ private:
 	const Playground::System & _system;
 	const Gateway::Gateway & _gateway;
 	const Oz::Oz & _oz;
+	const Algorithm::Algorithm & _algorithm;
 	const std::string _window_title;
 	const sf::VideoMode _window_mode;
 	const unsigned _window_framerate;

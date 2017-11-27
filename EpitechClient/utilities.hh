@@ -2,6 +2,10 @@
 
 #include <memory>
 #include <string>
+#include <deque>
+#include <chrono>
+#include <vector>
+#include <cmath>
 #include <SFML/Graphics.hpp>
 #include <ApiCodec/ApiStereoCameraPacket.hpp>
 
@@ -54,3 +58,28 @@ shared_array_ptr<T, N> make_shared_array(void)
 }
 
 bool is_sf_image_empty(const sf::Image &);
+
+namespace math
+{
+template<typename T>
+inline constexpr T pi(void) noexcept
+{
+	return static_cast<T>(3.14159265358979323846264338327950288);
+}
+}
+
+template<class T>
+sf::Vector2<T> sf_vec2_from_polar(T r, T theta)
+{
+	T phi = theta * math::pi<T>() / T{180};
+	return { r * std::cos(phi), r * std::sin(phi) };
+}
+
+template<class Unit, class Callable>
+Unit timed_call(Callable callable)
+{
+	using clock = std::chrono::steady_clock;
+	std::chrono::time_point<clock> begin = clock::now();
+	callable();
+	return std::chrono::duration_cast<Unit>(clock::now() - begin);
+}
