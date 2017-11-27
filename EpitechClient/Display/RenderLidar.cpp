@@ -75,12 +75,25 @@ void RenderLidar::update_lines(const std::deque<std::vector<Algorithm::point>> &
 	_vao_list_vegetable_lines.clear();
 	for (auto & current_line : lines) {
 		size_t len = current_line.size();
-		sf::VertexArray vao { sf::LineStrip, len };
+		sf::VertexArray vao_strip { sf::LineStrip, len };
 		for (size_t idx = 0 ; idx < len ; ++idx) {
-			vao[idx].position = sf::Vector2f(static_cast<float>(current_line[idx].x), static_cast<float>(current_line[idx].y));
-			vao[idx].color = sf::Color(0x00FFFFFF);
+			vao_strip[idx].position = sf::Vector2f(
+				static_cast<float>(current_line[idx].x),
+				static_cast<float>(current_line[idx].y)
+			);
+			vao_strip[idx].color = sf::Color(0x0000FFFF);
 		}
-		_vao_list_vegetable_lines.push_back(vao);
+		_vao_list_vegetable_lines.push_back(vao_strip);
+		sf::VertexArray vao_line { sf::LineStrip, 2 };
+		vao_line[0] = sf::Vertex{{
+			static_cast<float>(current_line.front().x),
+			static_cast<float>(current_line.front().y)
+		}, sf::Color{0x00FFFFFF}};
+		vao_line[1] = sf::Vertex{{
+			static_cast<float>(current_line.back().x),
+			static_cast<float>(current_line.back().y)
+		}, sf::Color{0x00FFFFFF}};
+		_vao_list_vegetable_lines.push_back(vao_line);
 	}
 }
 
