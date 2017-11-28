@@ -34,19 +34,19 @@ void	Motor::update(){
     	else
     		_motorSpeed = _speed;
 
-    	if (_angle > _motorAngle + ACCELERATION)
-    		_motorAngle = _motorAngle + ACCELERATION;
-    	else if (_angle < _motorAngle - ACCELERATION)
-    		_motorAngle = _motorAngle - ACCELERATION;
-    	else
+    	// if (_angle > _motorAngle + ACCELERATION)
+    	// 	_motorAngle = _motorAngle + ACCELERATION;
+    	// else if (_angle < _motorAngle - ACCELERATION)
+    	// 	_motorAngle = _motorAngle - ACCELERATION;
+    	// else
     		_motorAngle = _angle;
 
-    	if (_angleSpeed > _motorAngleSpeed + ACCELERATION)
-    		_motorAngleSpeed = _motorAngleSpeed + ACCELERATION;
-    	else if (_angleSpeed < _motorAngleSpeed - ACCELERATION)
-    		_motorAngleSpeed = _motorAngleSpeed - ACCELERATION;
-    	else
-    		_motorAngleSpeed = _angleSpeed;
+    	// if (_angleSpeed > _motorAngleSpeed + ACCELERATION)
+    	// 	_motorAngleSpeed = _motorAngleSpeed + ACCELERATION;
+    	// else if (_angleSpeed < _motorAngleSpeed - ACCELERATION)
+    	// 	_motorAngleSpeed = _motorAngleSpeed - ACCELERATION;
+    	// else
+    	// 	_motorAngleSpeed = _angleSpeed;
 
     }
     _gateway.emplace<HaMotorsPacket>(_motorSpeed + ((_motorSpeed/2) * (_motorAngle/128)), _motorSpeed - ((_motorSpeed/2) * (_motorAngle/128)));

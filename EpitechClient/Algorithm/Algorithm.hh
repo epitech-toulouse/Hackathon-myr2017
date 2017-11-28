@@ -99,6 +99,8 @@ private:
 	void goStraightForPlow();
 	void endPlow();
 	void turnOnNextLigne();
+
+	std::pair<point*, point*> get_near_point(std::deque<std::vector<point>> & points);
 };
 
 

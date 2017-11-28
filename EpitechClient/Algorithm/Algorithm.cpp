@@ -218,8 +218,31 @@ void Algorithm::endPlow()
 void Algorithm::turnOnNextLigne()
 {
 	Oz::Motor & motor = _oz.getMotor();
+	std::deque<std::vector<point>> sub_lines = _scanner.get_sub_lines();
+	std::pair<point*, point*> pairPoint = get_near_point(sub_lines);
+
+//	std::cout << (pairPoint.first ? std::to_string(pairPoint.first->x) : "null") << " " << (pairPoint.second ? std::to_string(pairPoint.second->x) : "null") << std::endl;
 	motor.setAngle(125);
 	motor.setSpeed(125);
+}
+
+std::pair<point*, point*> Algorithm::get_near_point(std::deque<std::vector<point>> & points)
+{
+	point *pointa = nullptr;
+	point *pointb = nullptr;
+	int distance = 0;
+
+	for (auto & line : points) {
+		distance = (int) sqrt(pow(line.front().x, 2) + pow(line.front().y, 2));
+		if (pointa == nullptr)
+			pointa = &line.front();
+		else if (distance < pointa->x)
+		{
+			pointb = pointa;
+			pointa = &line.front();
+		}
+	}
+	return(std::make_pair(pointa, pointb));
 }
 
 const std::chrono::milliseconds Algorithm::get_scan_time() const noexcept
