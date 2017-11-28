@@ -93,10 +93,17 @@ public:
 	const Scanner & get_scanner() const noexcept;
 	double get_run_distance() const noexcept;
 
+/*
+ * Tools
+ */
 private:
 	void update_run_distance(double, std::chrono::milliseconds) noexcept;
 	void adjust();
+	std::pair<point*, point*> get_near_point(std::deque<std::vector<point>> & points);
 
+/*
+ * Variables
+ */
 private:
 	void (Algorithm::*_next)(void);
 	Oz::Oz & _oz;
@@ -104,8 +111,10 @@ private:
 	std::chrono::milliseconds _scan_time;
 	std::chrono::time_point<Clock> _last_update_time;
 	double _run_distance;
+	double _startTurn;
+	
 /*
- * Internal functions
+ * Etapes
  */
 private:
 	void wait();
@@ -113,7 +122,6 @@ private:
 	void endPlow();
 	void turnOnNextLigne();
 
-	std::pair<point*, point*> get_near_point(std::deque<std::vector<point>> & points);
 };
 
 

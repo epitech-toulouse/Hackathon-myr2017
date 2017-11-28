@@ -49,7 +49,10 @@ void	Motor::update(){
     	// 	_motorAngleSpeed = _angleSpeed;
 
     }
-    _gateway.emplace<HaMotorsPacket>(_motorSpeed + ((_motorSpeed/2) * (_motorAngle/128)), _motorSpeed - ((_motorSpeed/2) * (_motorAngle/128)));
+    int a = _motorSpeed + ((_motorSpeed/2) * (_motorAngle/128));
+    int b = _motorSpeed - ((_motorSpeed/2) * (_motorAngle/128));
+    _gateway.emplace<HaMotorsPacket>((a > 127)? 127 : (a < -127 ? -127 : a), (b > 127)? 127 : (b < -127 ? -127 : b));
+    //std::cout << (_motorSpeed + ((_motorSpeed/2) * (_motorAngle/128))) << " " << (_motorSpeed - ((_motorSpeed/2) * (_motorAngle/128))) << " " << _speed << " " << _angle << std::endl;
 }
 
 void    Motor::setSpeed(int8_t speed){

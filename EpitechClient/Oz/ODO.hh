@@ -26,6 +26,7 @@ public:
 	double getSpeedRL() const noexcept;
 	double getSpeedFL() const noexcept;
 	double getSpeed() const noexcept;
+	double getDistance() const noexcept;
 
 private:
 	Gateway::Gateway & _gateway;
@@ -42,6 +43,7 @@ private:
 	double _speedRR;
 	double _speedRL;
 	double _speedFL;
+	double _distance;
 };
 
 }

@@ -17,7 +17,8 @@ ODO::ODO(Gateway::Gateway & gateway) :
 	_speedFR { 0 },
 	_speedRR { 0 },
 	_speedRL { 0 },
-	_speedFL { 0 }
+	_speedFL { 0 },
+	_distance { 0.0 }
 {
 }
 
@@ -32,6 +33,7 @@ void ODO::update()
 			this->_speedFR = 6.465 / dt;
 			this->_frontRight = packet->fr;
 			this->_lastTimeFR = now;
+			this->_distance += 6.465;
 		}
 		if (this->_rearRight != packet->rr) {
 			double dt = double(duration_cast<milliseconds>(now - _lastTimeRR).count()) / 3600.0;
@@ -73,6 +75,11 @@ double ODO::getSpeedFL() const noexcept
 double ODO::getSpeed() const noexcept
 {
     return (this->_speedFR + this->_speedRR + this->_speedRL + this->_speedFL) / 4;
+}
+
+double ODO::getDistance() const noexcept
+{
+	return(this->_distance);
 }
 
 }

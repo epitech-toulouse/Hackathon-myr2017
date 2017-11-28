@@ -318,7 +318,8 @@ void Display::_update_debug_text(Context & ctx) const
 	  << "Algorithm: " << _algorithm.get_scan_time().count() << "ms, "
 	  << _algorithm.get_scanner().get_iterations_count() << " iterations, "
 	  << _algorithm.get_scanner().get_sub_lines().size() << " connected lines" << "\n"
-	  << "Run distance: " << _algorithm.get_run_distance() << "cm\n";
+	  << "Run distance: " << _algorithm.get_run_distance() << "cm\n"
+	  << "Run distance: " << _oz.getODO().getDistance() << "cm\n";
 	ctx.debug_text.setString(out.str());
 }
 

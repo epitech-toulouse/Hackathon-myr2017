@@ -22,7 +22,7 @@ private:
 
 	std::thread _thread;
 
-	static const int8_t ACCELERATION = 50;
+	static const int8_t ACCELERATION = 40;
 
 public:
 	explicit Motor(Gateway::Gateway & gateway);

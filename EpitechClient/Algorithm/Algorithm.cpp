@@ -108,9 +108,9 @@ void Algorithm::adjust()
 		int distance1 = (int) sqrt(pow(nearpoint.first->x, 2) + pow(nearpoint.first->y, 2));
 		int distance2 = (int) sqrt(pow(nearpoint.second->x, 2) + pow(nearpoint.second->y, 2));
 		if (distance1 < distance2)
-			motor.setAngle(static_cast<int8_t>(motor.getAngle() + 1));
+			motor.setAngle(static_cast<int8_t>(motor.getAngle() + 15));
 		if (distance1 > distance2)
-			motor.setAngle(static_cast<int8_t>(motor.getAngle() - 1));
+			motor.setAngle(static_cast<int8_t>(motor.getAngle() - 15));
 	}
 }
 
@@ -243,7 +243,7 @@ void Algorithm::update()
 	_scan_time = timed_call<std::chrono::milliseconds>([&](){
 		_scanner.update(*capture);
 	});
-	this->adjust();
+	//this->adjust();
 
 	// Update run distance
 	auto now = Clock::now();
@@ -290,12 +290,13 @@ void Algorithm::endPlow()
 {
 	Oz::Motor & motor = _oz.getMotor();
 	Oz::Lidar & lidar = _oz.getLidar();
-	if (lidar.detect() == 0) {
+	if (lidar.detect() == 0 || _oz.getODO().getDistance() > 250.0) {
 		motor.setSpeed(0);
 		motor.setAngle(0);
 		if (motor.getMotorSpeed() < 50)
 		{
 			_next = &Algorithm::turnOnNextLigne;
+			_startTurn = 0;
 		}
 	}
 }
@@ -304,11 +305,24 @@ void Algorithm::turnOnNextLigne()
 {
 	Oz::Motor & motor = _oz.getMotor();
 	std::deque<std::vector<point>> sub_lines = _scanner.get_sub_lines();
-	std::pair<point*, point*> pairPoint = get_near_point(sub_lines);
+	if (_startTurn == 0)
+		_startTurn = _oz.getODO().getDistance();
+	else if (_oz.getODO().getDistance() - _startTurn < 100){
+		motor.setAngle(125);
+		motor.setSpeed(125);	
+	}
+	else if (_oz.getODO().getDistance() - _startTurn < 200) {
+		motor.setAngle(-125);
+		motor.setSpeed(-125);	
+	}
+	else {
+		motor.setAngle(0);
+		motor.setSpeed(0);			
+	}
+
+//	std::pair<point*, point*> pairPoint = get_near_point(sub_lines);
 
 //	std::cout << (pairPoint.first ? std::to_string(pairPoint.first->x) : "null") << " " << (pairPoint.second ? std::to_string(pairPoint.second->x) : "null") << std::endl;
-	motor.setAngle(125);
-	motor.setSpeed(125);
 }
 
 std::pair<point*, point*> Algorithm::get_near_point(std::deque<std::vector<point>> & points)
