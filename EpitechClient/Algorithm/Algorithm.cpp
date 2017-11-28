@@ -273,29 +273,33 @@ void Algorithm::goStraightForPlow()
 	_next = &Algorithm::endPlow;
 }
 
-void Algorithm::endPlow()
+void Algorithm::adjust()
 {
 	Oz::Motor & motor = _oz.getMotor();
-	Oz::Lidar & lidar = _oz.getLidar();
-
 	std::deque<std::vector<point>> sub_lines = _scanner.get_sub_lines();
 	std::pair<point*, point*> nearpoint = get_near_point(sub_lines);
+	int distance1 = 0;
+	int distance2 = 0;
 	if (nearpoint.first)
-	{
-		int distance1 = (int) sqrt(pow(nearpoint.first->x, 2) + pow(nearpoint.first->y, 2));
-		if (distance1 < 300 && nearpoint.first->x < 0) 
-			motor.setAngle(static_cast<int8_t>(motor.getAngle() + 10));
-		else if (distance1 < 300) 
-			motor.setAngle(static_cast<int8_t>(motor.getAngle() - 10));
-	}
+		distance1 = (int) sqrt(pow(nearpoint.first->x, 2) + pow(nearpoint.first->y, 2));
 	if (nearpoint.second)
-	{
-		int distance2 = (int) sqrt(pow(nearpoint.second->x, 2) + pow(nearpoint.second->y, 2));
-		if (distance2 < 300 && nearpoint.second->x < 0) 
-			motor.setAngle(static_cast<int8_t>(motor.getAngle() + 1));
-		else if (distance2 < 300) 
-			motor.setAngle(static_cast<int8_t>(motor.getAngle() - 1));
+		distance2 = (int) sqrt(pow(nearpoint.second->x, 2) + pow(nearpoint.second->y, 2));
+	
+	if (distance1 != 0 && distance1 < 300 && nearpoint.first->x < 0)
+		motor.setAngle(static_cast<int8_t>(10));
+	else if (distance2 != 0 && distance2 < 300 && nearpoint.second->x < 0)		
+		motor.setAngle(static_cast<int8_t>(10));
+	else if (distance1 != 0 && distance1 < 300 && nearpoint.first->x > 0)
+		motor.setAngle(static_cast<int8_t>(-10));
+	else if (distance2 != 0 && distance2 < 300 && nearpoint.second->x > 0)		
+		motor.setAngle(static_cast<int8_t>(-10));
 	}
+
+void Algorithm::endPlow()
+	{
+	Oz::Motor & motor = _oz.getMotor();	
+	Oz::Lidar & lidar = _oz.getLidar();
+
 	if (lidar.detect() == 0) { 	//|| _oz.getODO().getDistance() > 250.0
 		motor.setSpeed(0);
 		motor.setAngle(0);
@@ -305,6 +309,8 @@ void Algorithm::endPlow()
 			_startTurn = -1;
 		}
 	}
+	else
+		this->adjust();
 }
 
 void Algorithm::turnOnNextLigne()
