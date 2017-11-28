@@ -49,33 +49,28 @@ void	Motor::update(){
     	// 	_motorAngleSpeed = _angleSpeed;
 
     }
-    int a = _motorSpeed + ((_motorSpeed/2) * (_motorAngle/128));
-    int b = _motorSpeed - ((_motorSpeed/2) * (_motorAngle/128));
-    _gateway.emplace<HaMotorsPacket>((a > 127)? 127 : (a < -127 ? -127 : a), (b > 127)? 127 : (b < -127 ? -127 : b));
+    double a = _motorSpeed + ((_motorSpeed/2) * (_motorAngle/128));
+    double b = _motorSpeed - ((_motorSpeed/2) * (_motorAngle/128));
+    _gateway.emplace<HaMotorsPacket>(a, b);
+    // _gateway.emplace<HaMotorsPacket>((a > 127)? 127 : (a < -127 ? -127 : a), (b > 127)? 127 : (b < -127 ? -127 : b));
     //std::cout << (_motorSpeed + ((_motorSpeed/2) * (_motorAngle/128))) << " " << (_motorSpeed - ((_motorSpeed/2) * (_motorAngle/128))) << " " << _speed << " " << _angle << std::endl;
 }
 
 void    Motor::setSpeed(int8_t speed){
-    if (_angle > 69)
-    {
-        if (speed > 84)
-            _speed = 84;
-        else
-            _speed = speed; 
-    }
-    else if (speed > 100)
-        _speed = 100;
+    if (std::abs(_angle) > 0 && std::abs(speed) > 84)
+        _speed = (speed < 0 ? -84 : 84);
+    else if (std::abs(_angle) < 61 && std::abs(speed) > 100)
+        _speed = (speed < 0 ? -100 : 100);
     else
         _speed = speed;
 }
 
 void    Motor::setAngle(int8_t angle){
-    if (angle > 69 && _speed <= 84)
-        _angle = angle;
-    else if (angle > 69)
-        _angle = 69;
-    else
-        _angle = angle;
+    if (std::abs(angle) > 61 && std::abs(_speed) > 84)
+        _speed = (_speed < 0 ? -84 : 84);
+    else if (std::abs(_speed) > 100)
+        _speed = (_speed < 0 ? -100 : 100);
+    _angle = _angle;
 }
 
 void	Motor::setAngleSpeed(int8_t speed){

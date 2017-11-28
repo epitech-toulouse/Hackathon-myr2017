@@ -92,6 +92,7 @@ public:
 	const std::chrono::milliseconds get_scan_time() const noexcept;
 	const Scanner & get_scanner() const noexcept;
 	double get_run_distance() const noexcept;
+	const std::string getNextFunctionName() const noexcept;
 
 /*
  * Tools
@@ -112,7 +113,7 @@ private:
 	std::chrono::time_point<Clock> _last_update_time;
 	double _run_distance;
 	double _startTurn;
-	
+
 /*
  * Etapes
  */

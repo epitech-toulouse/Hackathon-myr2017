@@ -290,13 +290,14 @@ void Algorithm::endPlow()
 {
 	Oz::Motor & motor = _oz.getMotor();
 	Oz::Lidar & lidar = _oz.getLidar();
-	if (lidar.detect() == 0 || _oz.getODO().getDistance() > 250.0) {
+	std::cout << lidar.detect() << std::endl;
+	if (lidar.detect() == 0) { 	//|| _oz.getODO().getDistance() > 250.0
 		motor.setSpeed(0);
 		motor.setAngle(0);
 		if (motor.getMotorSpeed() < 50)
 		{
 			_next = &Algorithm::turnOnNextLigne;
-			_startTurn = 0;
+			_startTurn = -1;
 		}
 	}
 }
@@ -305,19 +306,19 @@ void Algorithm::turnOnNextLigne()
 {
 	Oz::Motor & motor = _oz.getMotor();
 	std::deque<std::vector<point>> sub_lines = _scanner.get_sub_lines();
-	if (_startTurn == 0)
+	if (_startTurn == -1)
 		_startTurn = _oz.getODO().getDistance();
 	else if (_oz.getODO().getDistance() - _startTurn < 100){
 		motor.setAngle(125);
-		motor.setSpeed(125);	
+		motor.setSpeed(125);
 	}
 	else if (_oz.getODO().getDistance() - _startTurn < 200) {
 		motor.setAngle(-125);
-		motor.setSpeed(-125);	
+		motor.setSpeed(-125);
 	}
 	else {
 		motor.setAngle(0);
-		motor.setSpeed(0);			
+		motor.setSpeed(0);
 	}
 
 //	std::pair<point*, point*> pairPoint = get_near_point(sub_lines);
@@ -354,5 +355,17 @@ const Scanner & Algorithm::get_scanner() const noexcept
 	return _scanner;
 }
 
+const std::string Algorithm::getNextFunctionName() const noexcept
+{
+	if (_next == &Algorithm::wait)
+		return "wait";
+	else if (_next == &Algorithm::goStraightForPlow)
+		return "goStraightForPlow";
+	else if (_next == &Algorithm::endPlow)
+		return "endPlow";
+	else if (_next == &Algorithm::turnOnNextLigne)
+		return "turnOnNextLigne";
+	return "unknown";
+}
 
 }
