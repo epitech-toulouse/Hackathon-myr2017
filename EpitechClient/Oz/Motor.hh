@@ -15,14 +15,14 @@ private:
 	int8_t _speed;
 	int8_t _angleSpeed;
 	int8_t _angle;
-	int8_t _motorSpeed;
-	int8_t _motorAngleSpeed;
-	int8_t _motorAngle;
+	double _motorSpeed;
+	double _motorAngleSpeed;
+	double _motorAngle;
 	std::time_t _lastTime;
 
 	std::thread _thread;
 
-	static const int8_t ACCELERATION = 10;
+	static const int8_t ACCELERATION = 25;
 
 public:
 	explicit Motor(Gateway::Gateway & gateway);
@@ -36,9 +36,9 @@ public:
 	int8_t getSpeed() const;
 	int8_t getAngle() const;
 	int8_t getAngleSpeed() const;
-	int8_t getMotorSpeed() const;
-	int8_t getMotorAngle() const;
-	int8_t getMotorAngleSpeed() const;
+	double getMotorSpeed() const;
+	double getMotorAngle() const;
+	double getMotorAngleSpeed() const;
 	void stop();
 };
 

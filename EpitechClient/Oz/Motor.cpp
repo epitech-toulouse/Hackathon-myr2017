@@ -28,36 +28,51 @@ void	Motor::update(){
     	_lastTime = actual;
     	
     	if (_speed > _motorSpeed + ACCELERATION)
-    		_motorSpeed = static_cast<int8_t> (_motorSpeed + ACCELERATION);
+    		_motorSpeed = _motorSpeed + ACCELERATION;
     	else if (_speed < _motorSpeed - ACCELERATION)
-    		_motorSpeed = static_cast<int8_t> (_motorSpeed - ACCELERATION);
+    		_motorSpeed = _motorSpeed - ACCELERATION;
     	else
     		_motorSpeed = _speed;
 
     	if (_angle > _motorAngle + ACCELERATION)
-    		_motorAngle = static_cast<int8_t> (_motorAngle + ACCELERATION);
+    		_motorAngle = _motorAngle + ACCELERATION;
     	else if (_angle < _motorAngle - ACCELERATION)
-    		_motorAngle = static_cast<int8_t> (_motorAngle - ACCELERATION);
+    		_motorAngle = _motorAngle - ACCELERATION;
     	else
     		_motorAngle = _angle;
 
     	if (_angleSpeed > _motorAngleSpeed + ACCELERATION)
-    		_motorAngleSpeed = static_cast<int8_t> (_motorAngleSpeed + ACCELERATION);
+    		_motorAngleSpeed = _motorAngleSpeed + ACCELERATION;
     	else if (_angleSpeed < _motorAngleSpeed - ACCELERATION)
-    		_motorAngleSpeed = static_cast<int8_t> (_motorAngleSpeed - ACCELERATION);
+    		_motorAngleSpeed = _motorAngleSpeed - ACCELERATION;
     	else
     		_motorAngleSpeed = _angleSpeed;
 
     }
-    _gateway.emplace<HaMotorsPacket>(_motorSpeed + ((_motorAngleSpeed/2) * (_motorAngle/128)), _motorSpeed - ((_motorAngleSpeed/2) * (_motorAngle/128)));
+    _gateway.emplace<HaMotorsPacket>(_motorSpeed + ((_motorSpeed/2) * (_motorAngle/128)), _motorSpeed - ((_motorSpeed/2) * (_motorAngle/128)));
 }
 
 void    Motor::setSpeed(int8_t speed){
-    _speed = speed;
+    if (_angle > 69)
+    {
+        if (speed > 84)
+            _speed = 84;
+        else
+            _speed = speed; 
+    }
+    else if (speed > 100)
+        _speed = 100;
+    else
+        _speed = speed;
 }
 
 void    Motor::setAngle(int8_t angle){
-    _angle = angle;
+    if (angle > 69 && _speed <= 84)
+        _angle = angle;
+    else if (angle > 69)
+        _angle = 69;
+    else
+        _angle = angle;
 }
 
 void	Motor::setAngleSpeed(int8_t speed){
@@ -76,15 +91,15 @@ int8_t  Motor::getAngleSpeed() const{
     return(_angleSpeed);
 }
 
-int8_t  Motor::getMotorSpeed() const{
+double  Motor::getMotorSpeed() const{
     return(_motorSpeed);
 }
 
-int8_t  Motor::getMotorAngle() const{
+double  Motor::getMotorAngle() const{
     return(_motorAngle);
 }
 
-int8_t  Motor::getMotorAngleSpeed() const{
+double  Motor::getMotorAngleSpeed() const{
     return(_motorAngleSpeed);
 }
 

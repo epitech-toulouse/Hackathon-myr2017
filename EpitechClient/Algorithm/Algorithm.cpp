@@ -193,7 +193,7 @@ void Algorithm::goStraightForPlow()
 	Oz::Motor & motor = _oz.getMotor();
 	Oz::Lidar & lidar = _oz.getLidar();
 	if (lidar.detect() > 0) {
-		motor.setSpeed(50);
+		motor.setSpeed(125);
 		motor.setAngle(0);
 	} else {
 		//TODO Do some actions
@@ -208,7 +208,7 @@ void Algorithm::endPlow()
 	if (lidar.detect() == 0) {
 		motor.setSpeed(0);
 		motor.setAngle(0);
-		if (motor.getMotorSpeed() == 0)
+		if (motor.getMotorSpeed() < 50)
 		{
 			_next = &Algorithm::turnOnNextLigne;
 		}
@@ -218,7 +218,8 @@ void Algorithm::endPlow()
 void Algorithm::turnOnNextLigne()
 {
 	Oz::Motor & motor = _oz.getMotor();
-	motor.setSpeed(-125);
+	motor.setAngle(125);
+	motor.setSpeed(125);
 }
 
 const std::chrono::milliseconds Algorithm::get_scan_time() const noexcept

@@ -292,9 +292,9 @@ void Display::_update_debug_text(Context & ctx) const
 	  << "quality: " << static_cast<unsigned>(gps.getQuality()) << "]\n"
 	  << "Speed: " << gps.getGroundSpeed() * 1000.0 / 60.0 << " m/min\n";
 
-	  // << "Motor: Speed = " << (int)(_oz.getMotor().getSpeed()) << " " << (int)(_oz.getMotor().getMotorSpeed()) << "\n"
-	  // << "Motor: Angle = " << (int)(_oz.getMotor().getAngle()) << " " << (int)(_oz.getMotor().getMotorAngle()) << "\n"
-	  // << "Motor: AngleSpeed = " << (int)(_oz.getMotor().getMotorAngleSpeed()) << " " << (int)(_oz.getMotor().getMotorAngleSpeed()) << "\n"
+	out << "Motor: Speed = " << (int)(_oz.getMotor().getSpeed()) << " " << (int)(_oz.getMotor().getMotorSpeed()) << "\n"
+	  << "Motor: Angle = " << (int)(_oz.getMotor().getAngle()) << " " << (int)(_oz.getMotor().getMotorAngle()) << "\n"
+	  << "Motor: AngleSpeed = " << (int)(_oz.getMotor().getMotorAngleSpeed()) << " " << (int)(_oz.getMotor().getMotorAngleSpeed()) << "\n";
 
 	/* Lidar */
 	out
