@@ -283,7 +283,6 @@ void Algorithm::endPlow()
 	if (nearpoint.first)
 	{
 		int distance1 = (int) sqrt(pow(nearpoint.first->x, 2) + pow(nearpoint.first->y, 2));
-		std::cout << distance1 << "\n";
 		if (distance1 < 300 && nearpoint.first->x < 0) 
 			motor.setAngle(static_cast<int8_t>(motor.getAngle() + 10));
 		else if (distance1 < 300) 
@@ -292,7 +291,6 @@ void Algorithm::endPlow()
 	if (nearpoint.second)
 	{
 		int distance2 = (int) sqrt(pow(nearpoint.second->x, 2) + pow(nearpoint.second->y, 2));
-		std::cout << distance2 << "\n";
 		if (distance2 < 300 && nearpoint.second->x < 0) 
 			motor.setAngle(static_cast<int8_t>(motor.getAngle() + 1));
 		else if (distance2 < 300) 
@@ -313,13 +311,15 @@ void Algorithm::turnOnNextLigne()
 {
 	Oz::Motor & motor = _oz.getMotor();
 	std::deque<std::vector<point>> sub_lines = _scanner.get_sub_lines();
+	double distance = _oz.getODO().getDistance();
+	//std::cout << (distance - _startTurn) << std::endl;
 	if (_startTurn == -1)
-		_startTurn = _oz.getODO().getDistance();
-	else if (_oz.getODO().getDistance() - _startTurn < 100){
+		_startTurn = distance;
+	else if (distance - _startTurn < 30){
 		motor.setAngle(125);
 		motor.setSpeed(125);
 	}
-	else if (_oz.getODO().getDistance() - _startTurn < 200) {
+	else if (distance - _startTurn < 70) {
 		motor.setAngle(-125);
 		motor.setSpeed(-125);
 	}

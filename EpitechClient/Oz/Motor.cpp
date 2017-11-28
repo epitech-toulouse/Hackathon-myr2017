@@ -70,7 +70,7 @@ void    Motor::setAngle(int8_t angle){
         _speed = (_speed < 0 ? -84 : 84);
     else if (std::abs(_speed) > 100)
         _speed = (_speed < 0 ? -100 : 100);
-    _angle = _angle;
+    _angle = angle;
 }
 
 void	Motor::setAngleSpeed(int8_t speed){
