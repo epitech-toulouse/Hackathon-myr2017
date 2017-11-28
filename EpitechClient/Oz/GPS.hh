@@ -1,5 +1,7 @@
 #pragma once
+
 #include <cstdint>
+#include <chrono>
 #include <ApiCodec/HaGpsPacket.hpp>
 #include "constants.hh"
 #include "utilities.hh"
@@ -14,6 +16,7 @@ class GPS : public Unit
 public:
 	explicit GPS(Gateway::Gateway & gateway);
 	void update() override;
+	std::chrono::milliseconds getTime() const noexcept;
 	double getLat() const noexcept;
 	double getLon() const noexcept;
 	double getAlt() const noexcept;
@@ -24,7 +27,7 @@ public:
 
 private:
 	Gateway::Gateway & _gateway;
-	uint64_t _time;
+	std::chrono::milliseconds _time;
 	double _lat;
 	double _lon;
 	double _alt;

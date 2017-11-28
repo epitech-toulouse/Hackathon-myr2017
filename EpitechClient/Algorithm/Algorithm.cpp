@@ -21,6 +21,11 @@ constexpr std::tuple<const double&, const double&> point::tie() const noexcept
 	return std::tie(this->y, this->x);
 }
 
+point operator-(const point & lhs, const point & rhs) noexcept
+{
+	return { lhs.x - rhs.x, lhs.y - rhs.y, point::unbound };
+}
+
 bool operator<(const point & lhs, const point & rhs)
 {
 	return lhs.tie() < rhs.tie();
@@ -33,7 +38,28 @@ bool operator==(const point & lhs, const point & rhs)
 
 double euclidean_distance(const point & p, const point & q)
 {
-	return sqrt((q.x - p.x) * (q.x - p.x) + (q.y - p.y) * (q.y - p.y));
+	return std::sqrt((q.x - p.x) * (q.x - p.x) + (q.y - p.y) * (q.y - p.y));
+}
+
+double vector_length(const point & p)
+{
+	return std::sqrt(p.x * p.x + p.y * p.y);
+}
+
+point normalize(const point & p)
+{
+	point q { p.x, p.y, point::unbound };
+	double len = vector_length(q);
+	q.x /= len;
+	q.y /= len;
+	return q;
+}
+
+double vector_angle(const point & p, const point & q)
+{
+	point pn = normalize(p);
+	point qn = normalize(q);
+	return std::acos(pn.x * qn.x + pn.y * qn.y) * 180.0 / math::pi<double>();
 }
 
 
@@ -79,6 +105,18 @@ void Scanner::agglomerate(const std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> &
 	for (uint16_t dist : capture) {
 		if (dist > 0) {
 			auto vec = sf_vec2_from_polar<double>(dist, angle);
+#if 0
+			if (!_world_buffer.empty()) {
+				auto prev = _world_buffer.back();
+				point a { vec.x, vec.y };
+				point b { prev.x, prev.y };
+				if (euclidean_distance(a, b) < 10.0) {
+					_world_buffer.pop_back();
+					_world_buffer.emplace_back((a.x + b.x) / 2.0, (a.y + b.y) / 2.0, point::unbound);
+					continue;
+				}
+			}
+#endif
 			_world_buffer.emplace_back(vec.x, vec.y, point::unbound);
 		}
 		++angle;
@@ -136,6 +174,17 @@ void Scanner::expand(cluster_info cluster, std::list<Scanner::point_reference> &
 		if (pt_n.cluster != point::unbound) {
 			continue;
 		}
+#if 0
+		if (cluster.points.size() > 1) {
+			point a = cluster.points.back() - cluster.points[cluster.points.size() - 2];
+			point b = pt_n - cluster.points.back();
+			double angle = vector_angle(a, b);
+			if (angle > 10.0) {
+				pt_n.cluster = point::noise;
+				continue;
+			}
+		}
+#endif
 		pt_n.cluster = cluster.id;
 		cluster.points.push_back(pt_n);
 		auto new_neighbors = this->neighbors_of(pt_n);
@@ -154,7 +203,10 @@ void Scanner::expand(cluster_info cluster, std::list<Scanner::point_reference> &
 Algorithm::Algorithm(Oz::Oz & oz) :
 	_next { nullptr },
 	_oz { oz },
-	_scanner { }
+	_scanner { },
+	_scan_time { 0 },
+	_last_update_time { },
+	_run_distance { 0 }
 {
 	_scanner.set_epsilon(300.0);
 }
@@ -165,6 +217,7 @@ void Algorithm::init()
 	camera.enable_compression(false);
 	camera.enable_raw(true);
 	_next = &Algorithm::wait;
+	_last_update_time = Clock::now();
 }
 
 void Algorithm::update()
@@ -175,8 +228,23 @@ void Algorithm::update()
 		_scanner.update(*capture);
 	});
 
+	// Update run distance
+	auto now = Clock::now();
+	this->update_run_distance(_oz.getODO().getSpeed(), duration_cast<std::chrono::milliseconds>(now - _last_update_time));
+	_last_update_time = now;
+
 	// Move
 	(this->*_next)();
+}
+
+double Algorithm::get_run_distance() const noexcept
+{
+	return _run_distance;
+}
+
+void Algorithm::update_run_distance(double ground_speed, std::chrono::milliseconds delta_time) noexcept
+{
+	_run_distance += ground_speed * (double(delta_time.count()) / 1000.0);
 }
 
 void Algorithm::wait()

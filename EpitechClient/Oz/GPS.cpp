@@ -22,15 +22,20 @@ void GPS::update()
 {
 	std::shared_ptr<HaGpsPacket> packet = _gateway.get<HaGpsPacket>();
 	if (packet != nullptr) {
-		this->_time = packet->time;
-		this->_lat = packet->lat;
-		this->_lon = packet->lon;
-		this->_alt = packet->alt;
-		this->_unit = static_cast<char>(packet->unit);
-		this->_satUsed = packet->satUsed;
-		this->_quality = packet->quality;
-		this->_groundSpeed = packet->groundSpeed;
+		_time = std::chrono::milliseconds(packet->time);
+		_lat = packet->lat;
+		_lon = packet->lon;
+		_alt = packet->alt;
+		_unit = static_cast<char>(packet->unit);
+		_satUsed = packet->satUsed;
+		_quality = packet->quality;
+		_groundSpeed = packet->groundSpeed;
 	}
+}
+
+std::chrono::milliseconds GPS::getTime() const noexcept
+{
+	return _time;
 }
 
 double GPS::getLon() const noexcept

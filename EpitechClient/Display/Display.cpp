@@ -290,7 +290,8 @@ void Display::_update_debug_text(Context & ctx) const
 	}
 	out << " [" << static_cast<unsigned>(gps.getSatelliteCount()) << " satellites, "
 	  << "quality: " << static_cast<unsigned>(gps.getQuality()) << "]\n"
-	  << "Speed: " << gps.getGroundSpeed() * 1000.0 / 60.0 << " m/min\n";
+	  << "Speed: " << gps.getGroundSpeed() * 100000.0 / 3600.0 << " cm/s\n"
+	  << "Epoch: " << gps.getTime().count() << "ms\n";
 
 	out << "Motor: Speed = " << (int)(_oz.getMotor().getSpeed()) << " " << (int)(_oz.getMotor().getMotorSpeed()) << "\n"
 	  << "Motor: Angle = " << (int)(_oz.getMotor().getAngle()) << " " << (int)(_oz.getMotor().getMotorAngle()) << "\n"
@@ -310,14 +311,14 @@ void Display::_update_debug_text(Context & ctx) const
 	  << "Gyro Y = " << (_oz.getGyro().getY()) << "\n"
 	  << "Gyro Z = " << (_oz.getGyro().getZ()) << "\n"
 	  << "Speed = " << (_oz.getODO().getSpeed()) << "\n"
-	  << "Position Actuator = " << (_oz.getActuator().getPosition()) << "\n";
+	  << "Position Actuator = " << static_cast<int>(_oz.getActuator().getPosition()) << "\n";
 
 	/* Algorithm */
 	out
 	  << "Algorithm: " << _algorithm.get_scan_time().count() << "ms, "
 	  << _algorithm.get_scanner().get_iterations_count() << " iterations, "
 	  << _algorithm.get_scanner().get_sub_lines().size() << " connected lines" << "\n"
-	  << "Position Actuator = " << (int)(_oz.getActuator().getPosition()) << "\n";
+	  << "Run distance: " << _algorithm.get_run_distance() << "cm\n";
 	ctx.debug_text.setString(out.str());
 }
 

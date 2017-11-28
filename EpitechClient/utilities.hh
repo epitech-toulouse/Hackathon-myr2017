@@ -61,11 +61,13 @@ bool is_sf_image_empty(const sf::Image &);
 
 namespace math
 {
+
 template<typename T>
 inline constexpr T pi(void) noexcept
 {
 	return static_cast<T>(3.14159265358979323846264338327950288);
 }
+
 }
 
 template<class T>

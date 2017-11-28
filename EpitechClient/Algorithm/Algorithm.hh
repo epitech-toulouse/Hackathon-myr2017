@@ -19,17 +19,21 @@ namespace Algorithm
  */
 struct point
 {
-	enum { unbound = -1 };
-	point(double, double, ssize_t);
+	enum { unbound = -1, noise = -2 };
+	point(double, double, ssize_t = unbound);
 	double x;
 	double y;
 	ssize_t cluster;
 	constexpr std::tuple<const double&, const double&> tie() const noexcept;
 };
 
+point operator-(const point & lhs, const point & rhs) noexcept;
 bool operator<(const point &, const point &);
 bool operator==(const point &, const point &);
 double euclidean_distance(const point &, const point &);
+double vector_length(const point & p);
+point normalize(const point & p);
+double vector_angle(const point & p, const point & q);
 
 
 /*
@@ -78,6 +82,8 @@ private:
  */
 class Algorithm
 {
+	using Clock = std::chrono::steady_clock;
+
 public:
 	explicit Algorithm(Oz::Oz &);
 	void init();
@@ -85,12 +91,18 @@ public:
 
 	const std::chrono::milliseconds get_scan_time() const noexcept;
 	const Scanner & get_scanner() const noexcept;
+	double get_run_distance() const noexcept;
+
+private:
+	void update_run_distance(double, std::chrono::milliseconds) noexcept;
 
 private:
 	void (Algorithm::*_next)(void);
 	Oz::Oz & _oz;
 	Scanner _scanner;
 	std::chrono::milliseconds _scan_time;
+	std::chrono::time_point<Clock> _last_update_time;
+	double _run_distance;
 /*
  * Internal functions
  */
