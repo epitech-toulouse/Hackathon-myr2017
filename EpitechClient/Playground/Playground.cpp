@@ -21,6 +21,7 @@ namespace Playground
 
   int Playground::run()
   {
+    this->gateway.enable_camera(args.enable_camera);
     this->gateway.start();
     this->algorithm.init();
     auto update_thread = _update_thread();

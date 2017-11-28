@@ -25,6 +25,7 @@ static struct option long_options[] = {
 	{"camera-port",    required_argument, 0, 'c'},
 	{"read-interval",  required_argument, 0, 'r'},
 	{"write-interval", required_argument, 0, 'w'},
+	{"no-camera",      no_argument,       0, 'x'},
 	{0, 0, 0, 0}
 };
 
@@ -44,6 +45,7 @@ static void help(void)
 	  << "  -c, --camera-port=PORT\tTarget host port for camera communication (default: " << default_camera_port << ")" << "\n"
 	  << "  -r, --read-interval=MS\tTime interval between socket reads (default: " << default_read_interval << ")" << "\n"
 	  << "  -w, --write-interval=MS\tTime interval between socket writes (default: " << default_write_interval << ")" << "\n"
+	  << "  -x, --no-camera\tDisables the camera\n"
 	  << std::endl;
 }
 
@@ -55,13 +57,14 @@ struct Arguments arg_parse(int argc, char ** argv)
 		.main_port = std::string(default_main_port),
 		.camera_port = std::string(default_camera_port),
 		.read_interval = static_cast<unsigned>(std::stoul(default_read_interval)),
-		.write_interval = static_cast<unsigned>(std::stoul(default_write_interval))
+		.write_interval = static_cast<unsigned>(std::stoul(default_write_interval)),
+		.enable_camera = true
 	};
 	int flag;
 	int option_index;
 	for (;;) {
 		option_index = 0;
-		flag = getopt_long(argc, argv, "a:c:hm:r:vw:", long_options, &option_index); 
+		flag = getopt_long(argc, argv, "a:c:hm:r:vw:x", long_options, &option_index); 
 		if (flag == -1) {
 			break;
 		}
@@ -88,6 +91,9 @@ struct Arguments arg_parse(int argc, char ** argv)
 			break;
 		case 'w':
 			args.write_interval = static_cast<unsigned>(std::stoul(optarg));
+			break;
+		case 'x':
+			args.enable_camera = false;
 			break;
 		case '?':
 			/* getopt_long already printed an error message. */

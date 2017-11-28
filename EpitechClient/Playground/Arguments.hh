@@ -13,6 +13,7 @@ struct Arguments
 	std::string camera_port;
 	unsigned read_interval;
 	unsigned write_interval;
+	bool enable_camera;
 };
 
 struct Arguments arg_parse(int argc, char ** argv);
