@@ -98,22 +98,6 @@ const std::deque<std::vector<point>> & Scanner::get_sub_lines() const noexcept
 	return _sub_lines;
 }
 
-void Algorithm::adjust()
-{
-	Oz::Motor & motor = _oz.getMotor();
-	std::deque<std::vector<point>> sub_lines = _scanner.get_sub_lines();
-	std::pair<point*, point*> nearpoint = get_near_point(sub_lines);
-	if (nearpoint.first && nearpoint.second)
-	{
-		int distance1 = (int) sqrt(pow(nearpoint.first->x, 2) + pow(nearpoint.first->y, 2));
-		int distance2 = (int) sqrt(pow(nearpoint.second->x, 2) + pow(nearpoint.second->y, 2));
-		if (distance1 < distance2)
-			motor.setAngle(static_cast<int8_t>(motor.getAngle() + 15));
-		if (distance1 > distance2)
-			motor.setAngle(static_cast<int8_t>(motor.getAngle() - 15));
-	}
-}
-
 void Scanner::agglomerate(const std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> & capture)
 {
 	int16_t angle = LIDAR_BEGIN_ANGLE;
@@ -293,6 +277,26 @@ void Algorithm::endPlow()
 {
 	Oz::Motor & motor = _oz.getMotor();
 	Oz::Lidar & lidar = _oz.getLidar();
+	std::deque<std::vector<point>> sub_lines = _scanner.get_sub_lines();
+	std::pair<point*, point*> nearpoint = get_near_point(sub_lines);
+	if (nearpoint.first)
+	{
+		int distance1 = (int) sqrt(pow(nearpoint.first->x, 2) + pow(nearpoint.first->y, 2));
+		std::cout << distance1 << "\n";
+		if (distance1 < 300 && nearpoint.first->x < 0) 
+			motor.setAngle(static_cast<int8_t>(motor.getAngle() + 10));
+		else if (distance1 < 300) 
+			motor.setAngle(static_cast<int8_t>(motor.getAngle() - 10));
+	}
+	if (nearpoint.second)
+	{
+		int distance2 = (int) sqrt(pow(nearpoint.second->x, 2) + pow(nearpoint.second->y, 2));
+		std::cout << distance2 << "\n";
+		if (distance2 < 300 && nearpoint.second->x < 0) 
+			motor.setAngle(static_cast<int8_t>(motor.getAngle() + 1));
+		else if (distance2 < 300) 
+			motor.setAngle(static_cast<int8_t>(motor.getAngle() - 1));
+	}
 	if (lidar.detect() == 0 || _oz.getODO().getDistance() > 250.0) {
 		motor.setSpeed(0);
 		motor.setAngle(0);
@@ -340,8 +344,11 @@ std::pair<point*, point*> Algorithm::get_near_point(std::deque<std::vector<point
 			pointa = &line.front();
 		else if (distance < pointa->x)
 		{
-			pointb = pointa;
-			pointa = &line.front();
+			if (pointb && ((pointa->x < 0 && pointb->x > 0) || (pointa->x > 0 && pointb->x < 0)))
+			{
+				pointb = pointa;
+				pointa = &line.front();
+			}
 		}
 	}
 	return(std::make_pair(pointa, pointb));
