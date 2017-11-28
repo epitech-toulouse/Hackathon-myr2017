@@ -22,17 +22,17 @@ void Gyro::update()
 	}
 }
 
-int16_t Gyro::getX() const noexcept
+double Gyro::getX() const noexcept
 {
 	return _xAngle;
 }
 
-int16_t Gyro::getY() const noexcept
+double Gyro::getY() const noexcept
 {
     return _yAngle;
 }
 
-int16_t Gyro::getZ() const noexcept
+double Gyro::getZ() const noexcept
 {
     return _zAngle;
 }
