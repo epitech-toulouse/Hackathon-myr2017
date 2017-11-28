@@ -7,6 +7,7 @@ namespace Display
 RenderLidar::RenderLidar(void) :
 	_background_color { 0x0F0100FF },
 	_grid_lines_color { 0x440B05FF },
+	_grid_lines_color_em { 0x642B25FF },
 	_vertices { sf::Points, LIDAR_CAPTURE_RESOLUTION },
 	_ray_lines { sf::Lines, LIDAR_CAPTURE_RESOLUTION * 2 },
 	_background { sf::Triangles, 6 },
@@ -43,12 +44,16 @@ RenderLidar::RenderLidar(void) :
 
 	float radius = 0.0f;
 	for (auto & line : _radius_grid_lines) {
-		radius += 400.0f;
+		radius += 500.0f;
 		line.setPosition(-radius, -radius);
 		line.setRadius(radius);
 		line.setFillColor(sf::Color(0));
 		line.setOutlineThickness(1);
-		line.setOutlineColor(sf::Color(_grid_lines_color));
+		if (radius != 1500.0f) {
+			line.setOutlineColor(sf::Color(_grid_lines_color));
+		} else {
+			line.setOutlineColor(sf::Color(_grid_lines_color_em));
+		}
 	}
 }
 

@@ -147,7 +147,7 @@ void Scanner::scan_sub_lines()
 	std::deque<std::vector<point>> sub_lines_buffer;
 	_iterations_count = 0;
 	for (point & pt : _world) {
-		if (pt.cluster != point::unbound) {
+		if (pt.cluster != point::unbound || euclidean_distance({0., 0.}, pt) > 1500.) {
 			continue;
 		}
 		auto neighbors = this->neighbors_of(pt);
@@ -156,6 +156,9 @@ void Scanner::scan_sub_lines()
 		pt.cluster = cluster.id;
 		cluster.points.push_back(pt);
 		this->expand(cluster, neighbors);
+		if (cluster.points.size() < 3) {
+			sub_lines_buffer.pop_back();
+		}
 		++current_id;
 	}
 	_sub_lines.swap(sub_lines_buffer);
