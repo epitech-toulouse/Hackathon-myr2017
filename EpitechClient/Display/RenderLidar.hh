@@ -28,11 +28,12 @@ private:
 private:
 	sf::Color _background_color;
 	sf::Color _grid_lines_color;
+	sf::Color _grid_lines_color_em;
 	sf::VertexArray _vertices;
 	sf::VertexArray _ray_lines;
 	sf::VertexArray _background;
 	sf::VertexArray _angle_grid_lines;
-	std::array<sf::CircleShape, 10> _radius_grid_lines;
+	std::array<sf::CircleShape, 8> _radius_grid_lines;
 	std::list<sf::VertexArray> _vao_list_vegetable_lines;
 	bool _enable_rays;
 	float _zoom;
