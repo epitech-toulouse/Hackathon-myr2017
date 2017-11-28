@@ -98,6 +98,22 @@ const std::deque<std::vector<point>> & Scanner::get_sub_lines() const noexcept
 	return _sub_lines;
 }
 
+void Algorithm::adjust()
+{
+	Oz::Motor & motor = _oz.getMotor();
+	std::deque<std::vector<point>> sub_lines = _scanner.get_sub_lines();
+	std::pair<point*, point*> nearpoint = get_near_point(sub_lines);
+	if (nearpoint.first && nearpoint.second)
+	{
+		int distance1 = (int) sqrt(pow(nearpoint.first->x, 2) + pow(nearpoint.first->y, 2));
+		int distance2 = (int) sqrt(pow(nearpoint.second->x, 2) + pow(nearpoint.second->y, 2));
+		if (distance1 < distance2)
+			motor.setAngle(static_cast<int8_t>(motor.getAngle() + 1));
+		if (distance1 > distance2)
+			motor.setAngle(static_cast<int8_t>(motor.getAngle() - 1));
+	}
+}
+
 void Scanner::agglomerate(const std::array<uint16_t, LIDAR_CAPTURE_RESOLUTION> & capture)
 {
 	int16_t angle = LIDAR_BEGIN_ANGLE;
@@ -227,6 +243,7 @@ void Algorithm::update()
 	_scan_time = timed_call<std::chrono::milliseconds>([&](){
 		_scanner.update(*capture);
 	});
+	this->adjust();
 
 	// Update run distance
 	auto now = Clock::now();

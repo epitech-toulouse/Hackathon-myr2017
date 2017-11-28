@@ -95,6 +95,7 @@ public:
 
 private:
 	void update_run_distance(double, std::chrono::milliseconds) noexcept;
+	void adjust();
 
 private:
 	void (Algorithm::*_next)(void);
