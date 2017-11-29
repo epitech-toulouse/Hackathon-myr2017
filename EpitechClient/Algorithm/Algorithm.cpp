@@ -299,7 +299,7 @@ void Algorithm::endPlow()
 	if (lidar.detect() == 0) { 	//|| _oz.getODO().getDistance() > 250.0
 		motor.setSpeed(0);
 		motor.setAngle(0);
-		if (motor.getMotorSpeed() <= 0)
+		if (motor.getSpeed() <= 0)
 		{
 			_next = &Algorithm::turnOnNextLigne;
 			_startTurn = -1;
@@ -313,8 +313,10 @@ void Algorithm::turnOnNextLigne()
 	std::deque<std::vector<point>> sub_lines = _scanner.get_sub_lines();
 	double distance = _oz.getODO().getDistance();
 	std::cout << _startTurn << " " << (distance - _startTurn) << std::endl;
-	if (_startTurn == -1)
+	if (_startTurn == -1){
+		_oz.getGyro().reset();
 		_startTurn = distance;
+	}
 	else if (distance - _startTurn < (6.645*2.0)){
 		motor.setSpeed(125);
 	}

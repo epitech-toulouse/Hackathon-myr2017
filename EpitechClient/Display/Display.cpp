@@ -293,9 +293,8 @@ void Display::_update_debug_text(Context & ctx) const
 	  << "Speed: " << gps.getGroundSpeed() * 100000.0 / 3600.0 << " cm/s\n"
 	  << "Epoch: " << gps.getTime().count() << "ms\n";
 
-	out << "Motor: Speed = " << (int)(_oz.getMotor().getSpeed()) << " " << (int)(_oz.getMotor().getMotorSpeed()) << "\n"
-	  << "Motor: Angle = " << (int)(_oz.getMotor().getAngle()) << " " << (int)(_oz.getMotor().getMotorAngle()) << "\n"
-	  << "Motor: AngleSpeed = " << (int)(_oz.getMotor().getMotorAngleSpeed()) << " " << (int)(_oz.getMotor().getMotorAngleSpeed()) << "\n";
+	out << "Motor: Speed = " << (int)(_oz.getMotor().getSpeed()) << "\n"
+	  << "Motor: Angle = " << (int)(_oz.getMotor().getAngle()) << "\n";
 
 	/* Lidar */
 	out
@@ -310,6 +309,9 @@ void Display::_update_debug_text(Context & ctx) const
 	  << "Gyro X = " << (_oz.getGyro().getX()) << "\n"
 	  << "Gyro Y = " << (_oz.getGyro().getY()) << "\n"
 	  << "Gyro Z = " << (_oz.getGyro().getZ()) << "\n"
+	  << "Gyro XX = " << (_oz.getGyro().getXX()) << "\n"
+	  << "Gyro YY = " << (_oz.getGyro().getYY()) << "\n"
+	  << "Gyro ZZ = " << (_oz.getGyro().getZZ()) << "\n"
 	  << "Speed = " << (_oz.getODO().getSpeed()) << "\n"
 	  << "Position Actuator = " << static_cast<int>(_oz.getActuator().getPosition()) << "\n";
 

@@ -17,12 +17,19 @@ public:
 	double getX() const noexcept;
     double getY() const noexcept;
     double getZ() const noexcept;
+	double getXX() const noexcept;
+    double getYY() const noexcept;
+    double getZZ() const noexcept;
+    void reset();
 
 private:
 	Gateway::Gateway & _gateway;
     double _xAngle;
     double _yAngle;
     double _zAngle;
+    double _x;
+    double _y;
+    double _z;
 };
 
 }
