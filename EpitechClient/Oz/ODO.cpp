@@ -57,7 +57,8 @@ void ODO::update()
 			this->_lastTimeFL = now;
 			check += 1;
 		}
-		this->_distance += 6.465;
+		if (check > 2)
+			this->_distance += 6.465;
 	}
 }
 

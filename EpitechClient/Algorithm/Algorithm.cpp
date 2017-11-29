@@ -286,13 +286,13 @@ void Algorithm::adjust()
 		distance2 = (int) sqrt(pow(nearpoint.second->x, 2) + pow(nearpoint.second->y, 2));
 	
 	if (distance1 != 0 && distance1 < 300 && nearpoint.first->x < 0)
-		motor.setAngle(static_cast<int8_t>(10));
+		motor.setAngle(static_cast<int8_t>(15));
 	else if (distance2 != 0 && distance2 < 300 && nearpoint.second->x < 0)		
-		motor.setAngle(static_cast<int8_t>(10));
+		motor.setAngle(static_cast<int8_t>(15));
 	else if (distance1 != 0 && distance1 < 300 && nearpoint.first->x > 0)
-		motor.setAngle(static_cast<int8_t>(-10));
+		motor.setAngle(static_cast<int8_t>(-15));
 	else if (distance2 != 0 && distance2 < 300 && nearpoint.second->x > 0)		
-		motor.setAngle(static_cast<int8_t>(-10));
+		motor.setAngle(static_cast<int8_t>(-15));
 	}
 
 void Algorithm::endPlow()
@@ -321,14 +321,14 @@ void Algorithm::turnOnNextLigne()
 	std::cout << _startTurn << " " << (distance - _startTurn) << std::endl;
 	if (_startTurn == -1)
 		_startTurn = distance;
-	else if (distance - _startTurn < (6.465*50.0)){
+	else if (distance - _startTurn < (6.465*5.0)){
 		motor.setSpeed(125);
 	}
-	else if (distance - _startTurn < (6.465*100.0)){
+	else if (distance - _startTurn < (6.465*11.0)){
 		motor.setAngle(-125);
 		motor.setSpeed(-125);
 	}
-	else if (distance - _startTurn < (6.465*120.0)) {
+	else if (distance - _startTurn < (6.465*16.0)) {
 		motor.setAngle(125);
 		motor.setSpeed(125);
 	}
