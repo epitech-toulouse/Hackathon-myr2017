@@ -100,7 +100,7 @@ public:
 private:
 	void update_run_distance(double, std::chrono::milliseconds) noexcept;
 	void adjust();
-	std::pair<point*, point*> get_near_point(std::deque<std::vector<point>> & points);
+	std::pair<point, point> get_near_point(std::deque<std::vector<point>> & points);
 
 /*
  * Variables

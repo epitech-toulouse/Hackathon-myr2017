@@ -26,6 +26,7 @@ void ODO::update()
 {
 	using std::chrono::milliseconds;
 	auto now = Clock::now();
+	int check = 0;
 	std::shared_ptr<HaOdoPacket> packet = _gateway.get<HaOdoPacket>();
 	if (packet != nullptr) {
 		if (this->_frontRight != packet->fr) {
@@ -33,26 +34,31 @@ void ODO::update()
 			this->_speedFR = 6.465 / dt;
 			this->_frontRight = packet->fr;
 			this->_lastTimeFR = now;
-			this->_distance += 6.465;
+			check += 1;
 		}
 		if (this->_rearRight != packet->rr) {
 			double dt = double(duration_cast<milliseconds>(now - _lastTimeRR).count()) / 3600.0;
 			this->_speedRR = 6.465 / dt;
 			this->_rearRight = packet->rr;
 			this->_lastTimeRR = now;
+			check += 1;
 		}
 		if (this->_rearLeft != packet->rl) {
 			double dt = double(duration_cast<milliseconds>(now - _lastTimeRL).count()) / 3600.0;
 			this->_speedRL = 6.465 / dt;
 			this->_rearLeft = packet->rl;
 			this->_lastTimeRL = now;
+			check += 1;
 		}
 		if (this->_frontLeft != packet->fl) {
 			double dt = double(duration_cast<milliseconds>(now - _lastTimeFL).count()) / 3600.0;
 			this->_speedFL = 6.465 / dt;
 			this->_frontLeft = packet->fl;
 			this->_lastTimeFL = now;
+			check += 1;
 		}
+		if (check > 2)
+			this->_distance += 6.465;
 	}
 }
 

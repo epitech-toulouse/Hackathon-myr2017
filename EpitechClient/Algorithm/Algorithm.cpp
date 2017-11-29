@@ -28,7 +28,11 @@ point operator-(const point & lhs, const point & rhs) noexcept
 
 bool operator<(const point & lhs, const point & rhs)
 {
-	return lhs.tie() < rhs.tie();
+	double lx = std::abs(lhs.x);
+	double ly = std::abs(lhs.y);
+	double rx = std::abs(rhs.x);
+	double ry = std::abs(rhs.y);
+	return std::tie(ly, lx) < std::tie(ry, rx);
 }
 
 bool operator==(const point & lhs, const point & rhs)
@@ -131,7 +135,7 @@ void Scanner::scan_sub_lines()
 	std::deque<std::vector<point>> sub_lines_buffer;
 	_iterations_count = 0;
 	for (point & pt : _world) {
-		if (pt.cluster != point::unbound || euclidean_distance({0., 0.}, pt) > 1500.) {
+		if (pt.cluster != point::unbound || euclidean_distance({0., 0.}, pt) > 1000.) {
 			continue;
 		}
 		auto neighbors = this->neighbors_of(pt);
@@ -211,7 +215,7 @@ Algorithm::Algorithm(Oz::Oz & oz) :
 	_last_update_time { },
 	_run_distance { 0 }
 {
-	_scanner.set_epsilon(300.0);
+	_scanner.set_epsilon(500.0);
 }
 
 void Algorithm::init()
@@ -265,7 +269,7 @@ void Algorithm::goStraightForPlow()
 	Oz::Motor & motor = _oz.getMotor();
 	Oz::Lidar & lidar = _oz.getLidar();
 	if (lidar.detect() > 0) {
-		motor.setSpeed(125);
+		motor.setSpeed(60);
 		motor.setAngle(0);
 	} else {
 		//TODO Do some actions
@@ -273,38 +277,64 @@ void Algorithm::goStraightForPlow()
 	_next = &Algorithm::endPlow;
 }
 
-void Algorithm::endPlow()
+void Algorithm::adjust()
 {
 	Oz::Motor & motor = _oz.getMotor();
+	std::deque<std::vector<point>> sub_lines = _scanner.get_sub_lines();
+	std::pair<point, point> nearpoint = get_near_point(sub_lines);
+	double distance1 = 0;
+	double distance2 = 0;
+	if (nearpoint.first.x == 0.0 && nearpoint.first.y == 0 && nearpoint.second.x == 0 && nearpoint.second.y == 0) {
+		std::cerr << "null" << std::endl;
+	}
+	distance1 = std::sqrt(std::pow(nearpoint.first.x, 2) + std::pow(nearpoint.first.y, 2));
+	distance2 = std::sqrt(std::pow(nearpoint.second.x, 2) + std::pow(nearpoint.second.y, 2));
+	if ((distance1 - distance2) < 300 && (distance1 - distance2) > 0 && nearpoint.first.x < 0)
+	{
+		motor.setAngle(static_cast<int8_t>(-60));
+	}
+	if ((distance1 - distance2) < 300 && (distance1 - distance2) > 0 && nearpoint.first.x > 0)
+	{
+		motor.setAngle(static_cast<int8_t>(60));	
+	}
+	if ((distance1 - distance2) < 0 && nearpoint.second.x < 0)
+	{
+		motor.setAngle(static_cast<int8_t>(60));
+	}
+	if ((distance1 - distance2) < 0 && nearpoint.second.x > 0)
+	{
+		motor.setAngle(static_cast<int8_t>(-60));	
+	}
+	else
+	{
+		motor.setAngle(static_cast<int8_t>(0));
+	}
+	// if (distance1 < 200 && nearpoint.first.x < 0)
+	// 	motor.setAngle(static_cast<int8_t>(15));
+	// if (distance2 < 200 && nearpoint.second.x < 0)		
+	// 	motor.setAngle(static_cast<int8_t>(15));
+	// if (distance1 < 200 && nearpoint.first.x > 0)
+	// 	motor.setAngle(static_cast<int8_t>(-15));
+	// if (distance2 < 200 && nearpoint.second.x > 0)		
+	// 	motor.setAngle(static_cast<int8_t>(-15));
+	}
+
+void Algorithm::endPlow()
+	{
+	Oz::Motor & motor = _oz.getMotor();	
 	Oz::Lidar & lidar = _oz.getLidar();
 
-	std::deque<std::vector<point>> sub_lines = _scanner.get_sub_lines();
-	std::pair<point*, point*> nearpoint = get_near_point(sub_lines);
-	if (nearpoint.first)
-	{
-		int distance1 = (int) sqrt(pow(nearpoint.first->x, 2) + pow(nearpoint.first->y, 2));
-		if (distance1 < 300 && nearpoint.first->x < 0) 
-			motor.setAngle(static_cast<int8_t>(motor.getAngle() + 10));
-		else if (distance1 < 300) 
-			motor.setAngle(static_cast<int8_t>(motor.getAngle() - 10));
-	}
-	if (nearpoint.second)
-	{
-		int distance2 = (int) sqrt(pow(nearpoint.second->x, 2) + pow(nearpoint.second->y, 2));
-		if (distance2 < 300 && nearpoint.second->x < 0) 
-			motor.setAngle(static_cast<int8_t>(motor.getAngle() + 1));
-		else if (distance2 < 300) 
-			motor.setAngle(static_cast<int8_t>(motor.getAngle() - 1));
-	}
 	if (lidar.detect() == 0) { 	//|| _oz.getODO().getDistance() > 250.0
 		motor.setSpeed(0);
 		motor.setAngle(0);
 		if (motor.getSpeed() <= 0)
 		{
+			_startTurn = -1;			
 			_next = &Algorithm::turnOnNextLigne;
-			_startTurn = -1;
 		}
 	}
+	else
+		this->adjust();
 }
 
 void Algorithm::turnOnNextLigne()
@@ -324,21 +354,16 @@ void Algorithm::turnOnNextLigne()
 		motor.setAngle(125);
 		motor.setSpeed(125);
 	}
-	else if (distance - _startTurn < (6.645*6.0)) {
+	else if (distance - _startTurn < (6.465*11.0)){
 		motor.setAngle(-125);
 		motor.setSpeed(-125);
 	}
-	else if (distance - _startTurn < (6.645*7.0)) {
-		motor.setAngle(0);
-		motor.setSpeed(50);
-	}
-	else if (distance - _startTurn < (6.645*9.0)) {
+	else if (distance - _startTurn < (6.465*16.0)) {
 		motor.setAngle(125);
 		motor.setSpeed(125);
 	}
 	else {
-		motor.setAngle(0);
-		motor.setSpeed(0);
+		_next = &Algorithm::endPlow;
 	}
 
 //	std::pair<point*, point*> pairPoint = get_near_point(sub_lines);
@@ -346,26 +371,40 @@ void Algorithm::turnOnNextLigne()
 //	std::cout << (pairPoint.first ? std::to_string(pairPoint.first->x) : "null") << " " << (pairPoint.second ? std::to_string(pairPoint.second->x) : "null") << std::endl;
 }
 
-std::pair<point*, point*> Algorithm::get_near_point(std::deque<std::vector<point>> & points)
+std::pair<point, point> Algorithm::get_near_point(std::deque<std::vector<point>> & points)
 {
-	point *pointa = nullptr;
-	point *pointb = nullptr;
-	int distance = 0;
+	point pointa { 0., 0. };
+	point pointb { 0., 0. };
+	double dista = 4000.;
+	double distb = 4000.;
 
 	for (auto & line : points) {
-		distance = (int) sqrt(pow(line.front().x, 2) + pow(line.front().y, 2));
-		if (pointa == nullptr)
-			pointa = &line.front();
-		else if (distance < pointa->x)
-		{
-			if (pointb && ((pointa->x < 0 && pointb->x > 0) || (pointa->x > 0 && pointb->x < 0)))
-			{
-				pointb = pointa;
-				pointa = &line.front();
-			}
+		point candidate = line.front();
+		double d = euclidean_distance({0.,0.}, candidate);
+		if (d < dista) {
+			pointa = line[1];
+			dista = d;
+		} else if (d < distb) {
+			pointb = line[1];
+			distb = d;
 		}
 	}
 	return(std::make_pair(pointa, pointb));
+	// point pointa = nullptr;
+	// point pointb = nullptr;
+	// double distance = 0;
+
+	// for (auto & line : points) {
+	// 	for (auto & test : line)
+	// 	{
+	// 		distance = std::sqrt(std::pow(test.x, 2) + std::pow(test.y, 2));
+	// 		if (distance < 70 && distance > 20 && test.x < 0)
+	// 			pointa = &test;
+	// 		if (distance < 70 && distance > 20 && test.x > 0)
+	// 			pointb = &test;
+	// 	}
+	// }
+	// return(std::make_pair(pointa, pointb));
 }
 
 const std::chrono::milliseconds Algorithm::get_scan_time() const noexcept
