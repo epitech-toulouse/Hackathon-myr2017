@@ -305,8 +305,8 @@ void Algorithm::endPlow()
 		motor.setAngle(0);
 		if (motor.getMotorSpeed() <= 0)
 		{
+			_startTurn = -1;			
 			_next = &Algorithm::turnOnNextLigne;
-			_startTurn = -1;
 		}
 	}
 	else
@@ -321,28 +321,19 @@ void Algorithm::turnOnNextLigne()
 	std::cout << _startTurn << " " << (distance - _startTurn) << std::endl;
 	if (_startTurn == -1)
 		_startTurn = distance;
-	else if (distance - _startTurn < (6.645*2.0)){
+	else if (distance - _startTurn < (6.465*50.0)){
 		motor.setSpeed(125);
 	}
-	else if (distance - _startTurn < (6.645*4.0)){
-		motor.setAngle(125);
-		motor.setSpeed(125);
-	}
-	else if (distance - _startTurn < (6.645*6.0)) {
+	else if (distance - _startTurn < (6.465*100.0)){
 		motor.setAngle(-125);
 		motor.setSpeed(-125);
 	}
-	else if (distance - _startTurn < (6.645*7.0)) {
-		motor.setAngle(0);
-		motor.setSpeed(50);
-	}
-	else if (distance - _startTurn < (6.645*9.0)) {
+	else if (distance - _startTurn < (6.465*120.0)) {
 		motor.setAngle(125);
 		motor.setSpeed(125);
 	}
 	else {
-		motor.setAngle(0);
-		motor.setSpeed(0);
+		_next = &Algorithm::endPlow;
 	}
 
 //	std::pair<point*, point*> pairPoint = get_near_point(sub_lines);
